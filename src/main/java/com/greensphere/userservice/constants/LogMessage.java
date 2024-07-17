@@ -2,9 +2,9 @@ package com.greensphere.userservice.constants;
 
 public class LogMessage {
     //log prefix
-    public static final String USER_ALREADY_EXIST="User Already Exist";
-    public static final String USER_REGISTERED_SUCCESSFULLY="User Registered Successfully";
-    public static final String USER_VALIDATION = "validate the user -> {}";
+    public static final String USER_ALREADY_EXIST="AppUser Already Exist";
+    public static final String USER_REGISTERED_SUCCESSFULLY="AppUser Registered Successfully";
+    public static final String USER_VALIDATION = "validate the appUser -> {}";
     public static final String EXCEPTION = "Exception -> {}";
 
     public static final String LOG_PREFIX_BAD_REQUEST_HANDLER = "BadRequestHandler -> {}";
@@ -42,14 +42,14 @@ public class LogMessage {
 
     //log content
     public static final String INVALID_CREDENTIAL = "Invalid credentials.";
-    public static final String USER_DISABLED = "User Disabled";
-    public static final String USER_LOCKED = "User Locked";
-    public static final String USER_NOT_ACTIVE = "User not active";
+    public static final String USER_DISABLED = "AppUser Disabled";
+    public static final String USER_LOCKED = "AppUser Locked";
+    public static final String USER_NOT_ACTIVE = "AppUser not active";
     public static final String DEVICE_ID_MISMATCH = "Device-ID mismatch";
     public static final String DEVICE_ID_NOT_FOUND = "Device-ID header not found";
     public static final String BAD_REQUEST = "Bad request";
     public static final String ERROR_OCCURRED = "Error occurred in the process";
-    public static final String CAN_NOT_FIND_USER = "Cannot find User";
+    public static final String CAN_NOT_FIND_USER = "Cannot find AppUser";
     public static final String INPUT_VALIDATION_ERROR = "input validation error";
 
     // SEND OTP
@@ -69,5 +69,5 @@ public class LogMessage {
     public static final String CHALLENGE_ERROR = "There is no biometric challenge";
     public static final String APP_USER_NOT_FOUND = "AppUser not found";
     public static final String IB_USER_NOT_FOUND = "IbUser not found";
-    public static final String USER_ALREADY_LOGGED_IN_ANOTHER_DEVICE = "User already logged in another device.";
+    public static final String USER_ALREADY_LOGGED_IN_ANOTHER_DEVICE = "AppUser already logged in another device.";
 }
