@@ -1,11 +1,13 @@
 package com.greensphere.userservice.dto.response;
 
+import com.greensphere.userservice.utils.ResponseCodeUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@NoArgsConstructor
+import java.util.HashMap;
+
 @Getter
 @Setter
 @Builder
@@ -13,9 +15,12 @@ public class DefaultResponse<T> {
     private String code;
     private String title;
     private String message;
-    private T data;
+    private Object data;
 
-    public DefaultResponse(String code, String title, String message, T data) {
+    public DefaultResponse() {
+    }
+
+    public DefaultResponse(String code, String title, String message, Object data) {
         this.code = code;
         this.title = title;
         this.message = message;
@@ -26,11 +31,30 @@ public class DefaultResponse<T> {
         this.code = code;
         this.title = title;
         this.message = message;
+        this.data = new HashMap<>();
     }
 
-    public DefaultResponse setMessage(String message) {
-        this.message = message;
-        return this;
+    public static DefaultResponse success(String title, String message, Object data) {
+        return new DefaultResponse(ResponseCodeUtil.SUCCESS_CODE, title, message, data);
     }
 
+    public static DefaultResponse success(String title, String message) {
+        return new DefaultResponse(ResponseCodeUtil.SUCCESS_CODE, title, message, new HashMap<String, Object>());
+    }
+
+    public static DefaultResponse error(String title, String message, Object data) {
+        return new DefaultResponse(ResponseCodeUtil.FAILED_CODE, title, message, data);
+    }
+
+    public static DefaultResponse error(String title, String message) {
+        return new DefaultResponse(ResponseCodeUtil.FAILED_CODE, title, message, new HashMap<String, Object>());
+    }
+
+    public static DefaultResponse internalServerError(String title, String message, Object data) {
+        return new DefaultResponse(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, title, message, data);
+    }
+
+    public static DefaultResponse internalServerError(String title, String message) {
+        return new DefaultResponse(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, title, message, new HashMap<String, Object>());
+    }
 }
