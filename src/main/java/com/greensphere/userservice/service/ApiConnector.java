@@ -1,6 +1,8 @@
 package com.greensphere.userservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsResponse;
+import com.greensphere.userservice.exceptions.ApiFailureException;
 import com.greensphere.userservice.exceptions.ApiUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.HashMap;
 import java.util.logging.Logger;
 
 @Service
@@ -23,12 +26,12 @@ import java.util.logging.Logger;
 @RequiredArgsConstructor
 public class ApiConnector {
 
-    private static final Logger logger = Logger.getLogger("API_LOG");
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
-    @Value("${base.url}")
-    private String baseUrl;
-
+    @Value("${sms.service.url}")
+    String smsServiceUrl;
+    @Value("${is.bypassed}")
+    boolean isBypassed;
 
     public HttpHeaders getHttpHeaders() {
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -85,6 +88,33 @@ public class ApiConnector {
         }
     }
 
-    public void sendSms() {
+    //send sms api call
+    public SmsResponse sendSms(String mobile,String massage) {
+
+        try {
+            String url = smsServiceUrl + "/user/send-sms";
+            HttpHeaders httpHeaders = getHttpHeaders();
+            String response;
+
+            HashMap<String, Object> data = new HashMap<>();
+            data.put("mobileNumber",mobile);
+            data.put("message",massage);
+
+            if (isBypassed) {
+                response = "{\n  \"code\":\"400\"\n  \"message\": \"error message here\"\n}";
+            } else {
+                response = sendPostRequest(url, data, httpHeaders);
+                log.info("loginByMobile response -> " + response);
+            }
+            if (response != null) {
+                SmsResponse smsResponse = objectMapper.readValue(response, SmsResponse.class);
+                log.info("loginByMobile-> response: {}", objectMapper.writeValueAsString(smsResponse));
+                return smsResponse;
+            }
+
+        } catch (Exception e) {
+            log.error("loginByMobile-> Exception: {}", e.getMessage(), e);
+        }
+        throw new ApiFailureException("loginByMobile-> API failure due to an internal server error");
     }
 }
