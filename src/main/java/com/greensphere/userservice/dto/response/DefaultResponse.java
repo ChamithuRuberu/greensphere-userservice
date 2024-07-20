@@ -3,7 +3,6 @@ package com.greensphere.userservice.dto.response;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.HashMap;

@@ -5,10 +5,6 @@ public enum Status {
     ACTIVE,
     DISABLED,
     PENDING,
-    LOCKED,
     SAVED,
-    INITIATED,
-    PIN_VERIFIED,
-    SENT,
-    VERIFIED
+    OTP_VERIFIED
 }

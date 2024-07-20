@@ -104,17 +104,17 @@ public class ApiConnector {
                 response = "{\n  \"code\":\"400\"\n  \"message\": \"error message here\"\n}";
             } else {
                 response = sendPostRequest(url, data, httpHeaders);
-                log.info("loginByMobile response -> " + response);
+                log.info("sendSms response -> " + response);
             }
             if (response != null) {
                 SmsResponse smsResponse = objectMapper.readValue(response, SmsResponse.class);
-                log.info("loginByMobile-> response: {}", objectMapper.writeValueAsString(smsResponse));
+                log.info("sendSms-> response: {}", objectMapper.writeValueAsString(smsResponse));
                 return smsResponse;
             }
 
         } catch (Exception e) {
-            log.error("loginByMobile-> Exception: {}", e.getMessage(), e);
+            log.error("sendSms-> Exception: {}", e.getMessage(), e);
         }
-        throw new ApiFailureException("loginByMobile-> API failure due to an internal server error");
+        throw new ApiFailureException("sendSms-> API failure due to an internal server error");
     }
 }

@@ -7,19 +7,6 @@ public class ResponseCodeUtil {
     public static final String FAILED_CODE = "2020";
     public static final String PARAMETER_MISSING = "2026";
     public static final String FAILED = "FAILED";
-    public static final String DECRYPTION_FAILED = "2027";
-
-
-    //for input details
-    public static final String INPUT_VALIDATION_ERROR_CODE = "3000";
-    public static final String USER_NOT_FOUND_ERROR_CODE = "3001";
-    public static final String INVALID_INPUT_FORMAT_ERROR_CODE = "3002";
-    public static final String INVALID_PASSWORD_ERROR_CODE = "3003";
-    public static final String DEVICE_NOT_FOUND_ERROR_CODE = "3004";
-    public static final String INVALID_INPUT_ERROR_CODE = "3005"; //wrong value
-    public static final String INVALID_CREDENTIAL_ERROR_CODE = "3006";
-    public static final String INVALID_FCM_TOKEN_ERROR_CODE = "3007";
-    public static final String PUBLIC_KEY_EMPTY_ERROR_CODE = "3008";
 
     //for jwt token
     public static final String JWT_TOKEN_VALIDATE_ERROR_CODE = "4000";
@@ -48,6 +35,4 @@ public class ResponseCodeUtil {
     public static final String CANNOT_FIND_USER = "6030";
     public static final String EMPTY_PARAMETER = "6050";
     public static final String LOCKED_USER_ERROR_CODE = "6006";
-    public static final String DEVICE_ID_MISMATCH_ERROR_CODE = "402";
-
 }
