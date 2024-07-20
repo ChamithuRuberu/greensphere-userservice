@@ -17,11 +17,6 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
 
     AppUser findAppUserByEmail(String email);
 
-    @Query("SELECT a FROM AppUser a WHERE a.status = :status and a.nic IN :nics")
-    List<AppUser> findAllByNicIn(@Param("status") String status, @Param("nics") List<String> nics);
-
-    boolean existsAppUserByMobileAndStatus(String mobile, String status);
-
     List<AppUser> findAppUsersByNicOrMobileOrEmail(String nic, String mobile, String email);
 
 }

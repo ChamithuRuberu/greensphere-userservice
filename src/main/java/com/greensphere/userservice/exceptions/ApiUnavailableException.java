@@ -10,8 +10,4 @@ public class ApiUnavailableException extends RuntimeException {
         super(message);
     }
 
-    public ApiUnavailableException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
 }

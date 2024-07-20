@@ -1,6 +1,5 @@
 package com.greensphere.userservice.entity;
 
-import com.greensphere.userservice.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -39,7 +38,7 @@ public class AppUser extends BaseEntity {
     private String profilePic;
     private LocalDateTime PasswordUpdatedAt;
     private int loginAttempts;
-    private String status = Status.INITIATED.name();
+    private String status;
     private LocalDateTime registeredAt;
 
     private String otp;

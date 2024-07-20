@@ -6,6 +6,7 @@ import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsR
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.Parameter;
 import com.greensphere.userservice.entity.Role;
+import com.greensphere.userservice.enums.Status;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.ParameterRepository;
 import com.greensphere.userservice.repository.UserRepository;
@@ -39,7 +40,6 @@ public class UserServiceImpl {
             String mobile = PhoneNumberUtil.formatNumber(registerInitRequest.getMobile());
             String email = registerInitRequest.getEmail();
             String nic = registerInitRequest.getNic();
-            String username = registerInitRequest.getUsername();
 
             AppUser appUser;
             List<AppUser> appUsers = userRepository.findAppUsersByNicOrMobileOrEmail(nic, mobile, email);
@@ -49,8 +49,7 @@ public class UserServiceImpl {
                             filter(a ->
                                     nic.equals(a.getNic()) &&
                                             email.equals(a.getEmail()) &&
-                                            mobile.equals(a.getMobile()) &&
-                                            username.equals(a.getUsername()))
+                                            mobile.equals(a.getMobile()))
                             .findFirst()
                             .orElse(null);
                     if (isExist == null) {
@@ -72,7 +71,6 @@ public class UserServiceImpl {
                         .mobile(mobile)
                         .email(email)
                         .nic(nic)
-                        .username(username)
                         .build();
                 Role roleByName = roleService.getRoleByName(registerInitRequest.getRoleType());
                 Set<Role> objects = new HashSet<>();
@@ -100,12 +98,14 @@ public class UserServiceImpl {
             //API CALL NOTIFICATION SERVICE ->
             SmsResponse smsResponse = apiConnector.sendSms(mobile, otpMessage);
             if (!smsResponse.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)){
-                throw new Exception("File not found " + smsResponse.getMessage());
+                throw new NullPointerException("sms response is null " + smsResponse.getMessage());
             }
             appUser.setOtp(otp);
             appUser.setOtpStatus(smsResponse.getMessage());
             appUser.setOtpAttempts(appUser.getOtpAttempts() + 1);
             appUser.setOtpSentAt(LocalDateTime.now());
+
+            appUser.setStatus(Status.PENDING.name());
             persistUser(appUser);
 
             HashMap<String, Object> data = new HashMap<>();

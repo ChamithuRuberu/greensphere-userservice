@@ -4,10 +4,7 @@ public class LogMessage {
     //log prefix
     public static final String USER_ALREADY_EXIST="AppUser Already Exist";
     public static final String USER_REGISTERED_SUCCESSFULLY="AppUser Registered Successfully";
-    public static final String USER_VALIDATION = "validate the appUser -> {}";
     public static final String EXCEPTION = "Exception -> {}";
-
-    public static final String LOG_PREFIX_BAD_REQUEST_HANDLER = "BadRequestHandler -> {}";
 
     public static final String OTP_VERIFY = "otpVerify -> {}";
     public static final String OTP_SEND = "sendOtpByEmailAndSms -> ";
@@ -25,18 +22,6 @@ public class LogMessage {
 
     public static final String REGISTER = "Register  -> {}";
 
-    public static final String ENCRYPT_DATA_EC = "Encrypt Data With EC -> {}";
-    public static final String ENCRYPT_DATA_AES = "Encrypt Data With Aes -> {}";
-    public static final String DECRYPT_DATA_AES = "Decrypt Data With Aes -> {}";
-    public static final String DECRYPT_DATA = "Decrypt Data -> {}";
-    public static final String ENCRYPT_DATA = "Encrypt Data -> {}";
-    public static final String PUBLIC_KEY = "Get Public Key -> {}";
-    public static final String PRIVATE_KEY = "Get Private Key -> {}";
-
-    public static final String GENERATE_SIGNATURE = "generate Signature -> {}";
-
-    public static final String SAVE_NEW_DEVICE = "save new device -> {}";
-    public static final String SAVE_DEVICE = "save device -> {}";
     public static final String LOGIN = "Login mobile -> {}";
 
 
@@ -45,8 +30,6 @@ public class LogMessage {
     public static final String USER_DISABLED = "AppUser Disabled";
     public static final String USER_LOCKED = "AppUser Locked";
     public static final String USER_NOT_ACTIVE = "AppUser not active";
-    public static final String DEVICE_ID_MISMATCH = "Device-ID mismatch";
-    public static final String DEVICE_ID_NOT_FOUND = "Device-ID header not found";
     public static final String BAD_REQUEST = "Bad request";
     public static final String ERROR_OCCURRED = "Error occurred in the process";
     public static final String CAN_NOT_FIND_USER = "Cannot find AppUser";
@@ -64,10 +47,4 @@ public class LogMessage {
     public static final String FAILED_RESPONSE = "failed response";
     public static final String INTERNAL_SERVER_ERROR_RESPONSE = "internal server error response";
 
-
-    public static final String NOT_FOUND = "Not found -> {}";
-    public static final String CHALLENGE_ERROR = "There is no biometric challenge";
-    public static final String APP_USER_NOT_FOUND = "AppUser not found";
-    public static final String IB_USER_NOT_FOUND = "IbUser not found";
-    public static final String USER_ALREADY_LOGGED_IN_ANOTHER_DEVICE = "AppUser already logged in another device.";
 }
