@@ -2,20 +2,20 @@ package com.greensphere.userservice.service;
 
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
 import com.greensphere.userservice.dto.response.BaseResponse;
+import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsResponse;
 import com.greensphere.userservice.entity.AppUser;
+import com.greensphere.userservice.entity.Parameter;
 import com.greensphere.userservice.entity.Role;
+import com.greensphere.userservice.exceptions.MissingParameterException;
+import com.greensphere.userservice.repository.ParameterRepository;
 import com.greensphere.userservice.repository.UserRepository;
-import com.greensphere.userservice.utils.PhoneNumberUtil;
-import com.greensphere.userservice.utils.ResponseCodeUtil;
-import com.greensphere.userservice.utils.ResponseUtil;
+import com.greensphere.userservice.utils.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -25,6 +25,7 @@ public class UserServiceImpl {
     private final UserRepository userRepository;
     private final ApiConnector apiConnector;
     private final RoleServiceImpl roleService;
+    private final ParameterRepository parameterRepository;
 
     public void persistUser(AppUser appUser) {
         try {
@@ -82,9 +83,30 @@ public class UserServiceImpl {
 
             }
             log.info("registerInit -> sending registration otp to user");
-            apiConnector.sendSms();
-                //TODO API CALL NOTIFICATION SERVICE ->
+            Parameter otpLengthParameter = parameterRepository.findParameterByName(AppConstants.OTP_LENGTH);
+            if (otpLengthParameter==null) {
+                log.warn("registerInit -> OTP_LENGTH parameter is missing from database");
+                throw new MissingParameterException("OTP_LENGTH parameter is missing from database, Please add missing OTP_LENGTH parameter");
+            }
 
+            Parameter otpMessageParameter = parameterRepository.findParameterByName(AppConstants.OTP_MESSAGE);
+            if (otpMessageParameter==null) {
+                log.warn("registerInit -> OTP_MESSAGE parameter is missing from database");
+                throw new MissingParameterException("OTP_MESSAGE parameter is missing from database, Please add missing OTP_MESSAGE parameter");
+            }
+            String otp = RandomNumberGenerator.createRandomReference(Integer.parseInt(otpLengthParameter.getValue()));
+            String otpMessage = otpMessageParameter.getValue().replace("<otp>", otp);
+
+            //API CALL NOTIFICATION SERVICE ->
+            SmsResponse smsResponse = apiConnector.sendSms(mobile, otpMessage);
+            if (!smsResponse.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)){
+                throw new Exception("File not found " + smsResponse.getMessage());
+            }
+            appUser.setOtp(otp);
+            appUser.setOtpStatus(smsResponse.getMessage());
+            appUser.setOtpAttempts(appUser.getOtpAttempts() + 1);
+            appUser.setOtpSentAt(LocalDateTime.now());
+            persistUser(appUser);
 
             HashMap<String, Object> data = new HashMap<>();
             data.put("app_user_id", appUser.getUsername());

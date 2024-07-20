@@ -46,6 +46,7 @@ public class AppUser extends BaseEntity {
     private String otpStatus;
     private String verifyAttempts;
     private LocalDateTime otpSentAt;
+    private int otpAttempts;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -61,5 +62,9 @@ public class AppUser extends BaseEntity {
 
     public void setPassword(String password) {
         this.password = new BCryptPasswordEncoder().encode(password);
+    }
+
+    public void setOtp(String otp) {
+        this.password = new BCryptPasswordEncoder().encode(otp);
     }
 }
