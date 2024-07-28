@@ -6,6 +6,7 @@ public class AppConstants {
     public static final String LOGIN_ATTEMPTS_EXCEEDED = "User account is disabled due to  login attempts exceeded.";
     public static final String LOGIN_ATTEMPTS_EXCEED_MESSAGE = "LOGIN_ATTEMPTS_EXCEED_MESSAGE";
     public static final String PASSWORD_RESET_MESSAGE_PORTAL = "PASSWORD_RESET_MESSAGE_PORTAL";
+    public static final String USER_ID_REQUIRED = "USER_ID_REQUIRED";
 
     private AppConstants(){
 

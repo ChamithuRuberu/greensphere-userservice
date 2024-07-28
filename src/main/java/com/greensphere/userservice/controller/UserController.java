@@ -1,6 +1,9 @@
 package com.greensphere.userservice.controller;
 
+import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
+import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
+import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.DefaultResponse;
 import com.greensphere.userservice.service.UserServiceImpl;
@@ -38,4 +41,47 @@ public class UserController {
                     .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
         }
     }
+
+    @PostMapping(value = "/register-verify")
+    public ResponseEntity<DefaultResponse> registerVerify(@Valid @RequestBody UserRegisterVerifyRequest userRegisterVerifyRequest) {
+        BaseResponse<HashMap<String, Object>> response = userService.registerVerify(userRegisterVerifyRequest);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+    @PostMapping(path = "/app-user/register")
+    public ResponseEntity<DefaultResponse> appUserSetUpDetails(@Valid @RequestBody SetUpDetailsRequest setUpDetailsRequest) {
+        BaseResponse<HashMap<String, Object>> response = userService.setUpDetails(setUpDetailsRequest);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+    @PostMapping(path = "/gov-user/register")
+    public ResponseEntity<DefaultResponse>govUserRegister(@Valid @RequestBody GovUserRegisterRequest govUserRegisterRequest){
+        BaseResponse<HashMap<String, Object>> response = userService.govUserSignUp(govUserRegisterRequest);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
 }

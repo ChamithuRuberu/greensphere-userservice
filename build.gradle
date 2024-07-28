@@ -37,7 +37,7 @@ dependencies {
     implementation group: 'com.sendgrid', name: 'sendgrid-java', version: '4.8.1'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-
+    implementation 'com.auth0:java-jwt:4.4.0'
 }
 
 tasks.named('test') {
