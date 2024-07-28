@@ -28,7 +28,7 @@ public class AppUser extends BaseEntity {
     private String mobile;
     private String nic;
     private String password;
-    private LocalDateTime deletedAt;
+    private LocalDateTime disabledAt;
     private String disabledReason;
     private String fullName;
     private String addressNo;
@@ -37,14 +37,18 @@ public class AppUser extends BaseEntity {
     private String dob;
     private String profilePic;
     private LocalDateTime PasswordUpdatedAt;
+    @Column(columnDefinition = "int default 0")
     private int loginAttempts;
     private String status;
+    private String postalCode;
     private LocalDateTime registeredAt;
 
     private String otp;
     private String otpStatus;
-    private String verifyAttempts;
+    @Column(columnDefinition = "int default 0")
+    private int verifyAttempts;
     private LocalDateTime otpSentAt;
+    @Column(columnDefinition = "int default 0")
     private int otpAttempts;
 
     @ManyToMany(fetch = FetchType.EAGER)

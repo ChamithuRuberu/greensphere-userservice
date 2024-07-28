@@ -101,7 +101,7 @@ public class ApiConnector {
             data.put("message",massage);
 
             if (isBypassed) {
-                response = "{\n  \"code\":\"400\"\n  \"message\": \"error message here\"\n}";
+                response = "{\n  \"code\":\"0000\",\n  \"message\": \"Success message here\"\n}";
             } else {
                 response = sendPostRequest(url, data, httpHeaders);
                 log.info("sendSms response -> " + response);

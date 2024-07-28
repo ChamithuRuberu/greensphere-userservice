@@ -36,8 +36,7 @@ public class SecurityConfiguration {
                                 .permitAll())
                 .authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers("/user/v2/**","/transaction/**").hasAuthority("APP_USER")
-//                                .requestMatchers("/transaction/**")
+                                .requestMatchers("/user/v2/**", "/transaction/**").hasAnyAuthority("APP_USER", "MODERATOR")
                                 .anyRequest().authenticated()
                 )
 
