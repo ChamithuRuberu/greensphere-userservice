@@ -1,11 +1,13 @@
 package com.greensphere.userservice.controller;
 
+import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
 import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.DefaultResponse;
+import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.service.UserServiceImpl;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
@@ -73,6 +75,20 @@ public class UserController {
     @PostMapping(path = "/gov-user/register")
     public ResponseEntity<DefaultResponse>govUserRegister(@Valid @RequestBody GovUserRegisterRequest govUserRegisterRequest){
         BaseResponse<HashMap<String, Object>> response = userService.govUserSignUp(govUserRegisterRequest);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+    @PostMapping(path = "/login")
+    public ResponseEntity<DefaultResponse>login(@Valid @RequestBody UserLoginRequest loginRequest){
+        BaseResponse<UserLoginResponse> response = userService.login(loginRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
         } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
