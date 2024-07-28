@@ -1,6 +1,7 @@
 package com.greensphere.userservice.service;
 
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
+import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
 import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
@@ -8,6 +9,8 @@ import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRe
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.OtpVerifyResponse;
 import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsResponse;
+import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
+import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.Parameter;
 import com.greensphere.userservice.entity.Role;
@@ -18,14 +21,14 @@ import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.utils.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.greensphere.userservice.enums.Status.*;
 
@@ -40,6 +43,8 @@ public class UserServiceImpl {
     private final ParameterRepository parameterRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+
 
     public void persistUser(AppUser appUser) {
         try {
@@ -97,7 +102,7 @@ public class UserServiceImpl {
                     persistUser(appUser);
                     log.info("registerInit -> govUser saved in INITIATED status, mobile: {}, email: {}, nic: {}, govId :{} ", mobile, email, nic, govId);
 
-                }else {
+                } else {
                     appUser = AppUser.builder()
                             .mobile(mobile)
                             .email(email)
@@ -128,7 +133,7 @@ public class UserServiceImpl {
 
             //API CALL NOTIFICATION SERVICE ->
             log.info("registerInit -> sending registration otp to user");
-            log.info("** sending otp to user ** ",otpMessage);
+            log.info("** sending otp to user ** ", otpMessage);
             SmsResponse smsResponse = apiConnector.sendSms(mobile, otpMessage);
             String otpStatus = smsResponse.getCode().equals(ResponseCodeUtil.SUCCESS_CODE) ? SENT.name() : FAILED.name();
             appUser.setOtp(otp);
@@ -136,7 +141,7 @@ public class UserServiceImpl {
             appUser.setOtpAttempts(appUser.getOtpAttempts() + 1);
             appUser.setOtpSentAt(LocalDateTime.now());
 
-            appUser.setStatus(Status.PENDING.name());
+            appUser.setStatus(PENDING.name());
             persistUser(appUser);
 
             HashMap<String, Object> data = new HashMap<>();
@@ -417,17 +422,17 @@ public class UserServiceImpl {
             persistUser(user);
 
             HashMap<String, Object> userObj = new HashMap<>();
-            userObj.put("full_name",user.getFullName());
-            userObj.put("status",user.getStatus());
-            userObj.put("city",user.getCity());
-            userObj.put("email",user.getEmail());
-            userObj.put("user_id",user.getGovId());
+            userObj.put("full_name", user.getFullName());
+            userObj.put("status", user.getStatus());
+            userObj.put("city", user.getCity());
+            userObj.put("email", user.getEmail());
+            userObj.put("user_id", user.getGovId());
 
 
             HashMap<String, Object> data = new HashMap<>();
-            data.put("token",token);
-            data.put("refresh_token",refreshToken);
-            data.put("user",userObj);
+            data.put("token", token);
+            data.put("refresh_token", refreshToken);
+            data.put("user", userObj);
 
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
@@ -436,7 +441,7 @@ public class UserServiceImpl {
                     .data(data)
                     .build();
 
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("govUserSignUp -> Exception : {}", e.getMessage(), e);
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
@@ -444,5 +449,132 @@ public class UserServiceImpl {
                     .message("Error occurred while signup Government User")
                     .build();
         }
+    }
+
+    public BaseResponse<UserLoginResponse> login(UserLoginRequest loginRequest) {
+        try {
+            String password = loginRequest.getPassword();
+            AppUser loginUser = userRepository.findAppUserByEmail(loginRequest.getEmail());
+
+            if (loginUser == null) {
+                log.warn("There is No user Found -> {}", loginRequest.getEmail());
+                return BaseResponse.<UserLoginResponse>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("App User Not Found")
+                        .build();
+            }
+
+            return logUser(loginRequest, password, loginUser);
+
+        } catch (Exception e) {
+            log.error("govUserSignUp -> Exception : {}", e.getMessage(), e);
+            return BaseResponse.<UserLoginResponse>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseUtil.INTERNAL_SERVER_ERROR)
+                    .message("Error occurred while user login")
+                    .build();
+        }
+    }
+
+    private BaseResponse<UserLoginResponse> logUser(UserLoginRequest loginRequest, String password, AppUser loginUser) {
+        if (ACTIVE.name().equals(loginUser.getStatus())) {
+            try {
+                authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), password));
+                loginUser.setLoginAttempts(0);
+                persistUser(loginUser);
+
+            } catch (BadCredentialsException e) {
+                int remainingAttempts = 0;
+                log.info("login -> Invalid credentials, user login attempts: " + loginUser.getLoginAttempts());
+
+                Parameter parameter = parameterRepository.findParameterByName(AppConstants.LOGIN_ATTEMPTS);
+                if (parameter == null) {
+                    log.warn("login -> Missing Parameter -> " + AppConstants.LOGIN_ATTEMPTS);
+                    throw new MissingParameterException("Parameter not found for given name: " + AppConstants.LOGIN_ATTEMPTS);
+                }
+
+                int attempts = Integer.parseInt(parameter.getValue());
+
+                if (loginUser.getLoginAttempts() < attempts) {
+                    log.info("login -> remaining login attempts: " + loginUser.getLoginAttempts());
+                    loginUser.setLoginAttempts(loginUser.getLoginAttempts() + 1);
+                    persistUser(loginUser);
+
+                    remainingAttempts = attempts - loginUser.getLoginAttempts();
+                    if (remainingAttempts < 1) {
+                        loginUser.setStatus(DISABLED.name());
+                        loginUser.setDisabledReason(AppConstants.LOGIN_ATTEMPTS_EXCEEDED);
+                        persistUser(loginUser);
+                        log.info("User {} has been disabled due to exceeded login attempts.", loginUser.getUsername());
+
+                    //send login attempts exceeded sms
+                    Parameter smsExceeded = parameterRepository.findParameterByName(AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
+                    if (smsExceeded== null) {
+                        log.warn("login -> Missing Parameter -> " + AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
+                        throw new MissingParameterException("Parameter not found for given name: " + AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
+                    }
+
+
+                    log.info("Sending login attempts exceeded message to user {}.", loginUser.getUsername());
+                    String value = smsExceeded.getValue();
+                    String mobile = loginUser.getMobile();
+                    SmsResponse sms = apiConnector.sendSms(mobile, value);
+                    if (!ResponseCodeUtil.SUCCESS_CODE.equals(sms.getCode())) {
+                        log.error("Failed to send message to user {} at mobile number {}.", loginUser.getUsername(), loginUser.getMobile());
+                    }
+
+                        log.error("loguser -> login attempts exceeded");
+                        return BaseResponse.<UserLoginResponse>builder()
+                                .code(ResponseCodeUtil.OTP_ATTEMPTS_EXCEED_ERROR_CODE)
+                                .title(ResponseUtil.FAILED)
+                                .message("Login attempts exceeded.Please contact the Bank")
+                                .build();
+                    } else {
+                        log.error("loguser -> attempted failed. You have : " + remainingAttempts);
+                        return BaseResponse.<UserLoginResponse>builder()
+                                .code(ResponseCodeUtil.FAILED_CODE)
+                                .title(ResponseUtil.FAILED)
+                                .message("Login attempted failed. You have " + remainingAttempts + " more attempts.")
+                                .build();
+                    }
+                }
+            }
+        } else {
+            log.info("logUser -> Disabled user");
+            return BaseResponse.<UserLoginResponse>builder()
+                    .code(ResponseCodeUtil.DISABLE_USER_ERROR_CODE)
+                    .title(ResponseUtil.FAILED)
+                    .message("User is not Active. Please contact the Support Center")
+                    .build();
+        }
+
+        TokenRequest tokenRequest = TokenRequest.builder()
+                .role(loginRequest.getRoleType())
+                .username(loginUser.getUsername())
+                .now(LocalDateTime.now())
+                .build();
+
+        String token = jwtUtil.createJwtToken(tokenRequest);
+        String refreshToken = jwtUtil.createRefreshToken(tokenRequest);
+
+        UserLoginResponse data = UserLoginResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .userObj(UserObj.builder()
+                        .fullName(loginUser.getFullName())
+                        .email(loginUser.getEmail())
+                        .govId(loginUser.getGovId())
+                        .city(loginUser.getCity())
+                        .status(loginUser.getStatus())
+                        .build())
+                .build();
+
+        return BaseResponse.<UserLoginResponse>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseUtil.SUCCESS)
+                .message("Successfully logged in")
+                .data(data)
+                .build();
     }
 }

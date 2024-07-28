@@ -8,11 +8,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class UserLoginResponse {
-    @JsonProperty("token")
-    private String token;
-    @JsonProperty("refresh_token")
-    private String refreshToken;
-    @JsonProperty("user")
-    private UserObj userObj;
+public class UserObj {
+    @JsonProperty("full_name")
+    private String fullName;
+    private String email;
+    @JsonProperty("gov_id")
+    private Long govId;
+    private String city;
+    private String status;
 }
