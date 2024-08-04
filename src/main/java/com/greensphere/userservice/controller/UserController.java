@@ -1,5 +1,6 @@
 package com.greensphere.userservice.controller;
 
+import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
 import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,6 +61,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/app-user/register")
+    @PreAuthorize("hasAuthority('APP_USER')")
     public ResponseEntity<DefaultResponse> appUserSetUpDetails(@Valid @RequestBody SetUpDetailsRequest setUpDetailsRequest) {
         BaseResponse<HashMap<String, Object>> response = userService.setUpDetails(setUpDetailsRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
@@ -73,6 +76,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/gov-user/register")
+    @PreAuthorize("hasAuthority('GOV_USER')")
     public ResponseEntity<DefaultResponse>govUserRegister(@Valid @RequestBody GovUserRegisterRequest govUserRegisterRequest){
         BaseResponse<HashMap<String, Object>> response = userService.govUserSignUp(govUserRegisterRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
@@ -97,6 +101,20 @@ public class UserController {
         } else {
             return ResponseEntity.badRequest()
                     .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+    @PostMapping(path = "/logout")
+    public ResponseEntity<DefaultResponse> logOut(@RequestBody LogOutRequest logOutRequest) {
+        BaseResponse<?> response = userService.logOut(logOutRequest);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage()));
         }
     }
 
