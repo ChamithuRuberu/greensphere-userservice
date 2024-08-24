@@ -1,4 +1,4 @@
-package com.greensphere.userservice.service;
+package com.greensphere.userservice.service.impl;
 
 import com.auth0.jwt.JWT;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
@@ -22,6 +22,8 @@ import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.ParameterRepository;
 import com.greensphere.userservice.repository.TokenBlackListRepository;
 import com.greensphere.userservice.repository.UserRepository;
+import com.greensphere.userservice.service.ApiConnector;
+import com.greensphere.userservice.service.UserService;
 import com.greensphere.userservice.utils.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +44,7 @@ import static com.greensphere.userservice.enums.Status.*;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserServiceImpl {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ApiConnector apiConnector;
@@ -156,6 +158,7 @@ public class UserServiceImpl {
             HashMap<String, Object> data = new HashMap<>();
             data.put("app_user_id", appUser.getUsername());
             data.put("mobile", mobile);
+            data.put("gov_id", appUser.getGovId());
             data.put("user_role", appUser.getRoles());
 
             return BaseResponse.<HashMap<String, Object>>builder()
@@ -202,6 +205,7 @@ public class UserServiceImpl {
             data.put("user_id", user.getUsername());
             data.put("user_status", user.getStatus());
             data.put("message", otpVerificationResponse.getMessage());
+            data.put("gov_id",user.getGovId());
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
                     .title(ResponseUtil.SUCCESS)
@@ -347,7 +351,7 @@ public class UserServiceImpl {
                         .build();
             }
 
-            boolean matches = passwordEncoder.matches(otp, appUser.getOtp());
+            boolean matches = otp.equals(appUser.getOtp());
             if (matches) {
                 appUser.setOtpStatus(VERIFIED.name());
                 appUser.setStatus(VERIFIED.name());

@@ -11,7 +11,6 @@ public class UserRegisterRequestDto {
     private String nic;
     private String mobile;
     private String email;
-    private String username;
     @NotEmpty(message = "roleType should not be empty")
     @JsonProperty("role_type")
     private String roleType;

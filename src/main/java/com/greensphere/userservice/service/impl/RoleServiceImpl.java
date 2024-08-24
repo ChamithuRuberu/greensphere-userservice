@@ -1,4 +1,4 @@
-package com.greensphere.userservice.service;
+package com.greensphere.userservice.service.impl;
 
 import com.greensphere.userservice.entity.Role;
 import com.greensphere.userservice.repository.RoleRepository;

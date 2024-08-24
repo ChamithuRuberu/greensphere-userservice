@@ -67,7 +67,4 @@ public class AppUser extends BaseEntity {
         this.password = new BCryptPasswordEncoder().encode(password);
     }
 
-    public void setOtp(String otp) {
-        this.password = new BCryptPasswordEncoder().encode(otp);
-    }
 }

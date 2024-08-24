@@ -9,7 +9,8 @@ import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRe
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.DefaultResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
-import com.greensphere.userservice.service.UserServiceImpl;
+import com.greensphere.userservice.service.UserService;
+import com.greensphere.userservice.service.impl.UserServiceImpl;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
 import jakarta.validation.Valid;
@@ -30,7 +31,7 @@ import java.util.HashMap;
 @RequestMapping("/user")
 public class UserController {
 
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     @PostMapping(value = "/register-init")
     public ResponseEntity<DefaultResponse> registerInit(@Valid @RequestBody UserRegisterRequestDto registerInitRequest) {
@@ -47,7 +48,7 @@ public class UserController {
     }
 
     @PostMapping(value = "/register-verify")
-    public ResponseEntity<DefaultResponse> registerVerify(@Valid @RequestBody UserRegisterVerifyRequest userRegisterVerifyRequest) {
+    public ResponseEntity<DefaultResponse> registerVerify( @RequestBody UserRegisterVerifyRequest userRegisterVerifyRequest) {
         BaseResponse<HashMap<String, Object>> response = userService.registerVerify(userRegisterVerifyRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
@@ -60,8 +61,8 @@ public class UserController {
         }
     }
 
-    @PostMapping(path = "/app-user/register")
-    @PreAuthorize("hasAuthority('APP_USER')")
+    @PostMapping(path = "/app-user/register")   
+//    @PreAuthorize("hasAuthority('APP_USER')")
     public ResponseEntity<DefaultResponse> appUserSetUpDetails(@Valid @RequestBody SetUpDetailsRequest setUpDetailsRequest) {
         BaseResponse<HashMap<String, Object>> response = userService.setUpDetails(setUpDetailsRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
@@ -76,7 +77,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/gov-user/register")
-    @PreAuthorize("hasAuthority('GOV_USER')")
+//    @PreAuthorize("hasAuthority('GOVERNMENT_USER')")
     public ResponseEntity<DefaultResponse>govUserRegister(@Valid @RequestBody GovUserRegisterRequest govUserRegisterRequest){
         BaseResponse<HashMap<String, Object>> response = userService.govUserSignUp(govUserRegisterRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
