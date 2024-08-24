@@ -1,5 +1,7 @@
-package com.greensphere.userservice.service;
+package com.greensphere.userservice.service.impl;
 
+import com.auth0.jwt.JWT;
+import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
@@ -14,10 +16,14 @@ import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.Parameter;
 import com.greensphere.userservice.entity.Role;
-import com.greensphere.userservice.enums.Status;
+import com.greensphere.userservice.entity.TokenBlackList;
+import com.greensphere.userservice.enums.ResponseStatus;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.ParameterRepository;
+import com.greensphere.userservice.repository.TokenBlackListRepository;
 import com.greensphere.userservice.repository.UserRepository;
+import com.greensphere.userservice.service.ApiConnector;
+import com.greensphere.userservice.service.UserService;
 import com.greensphere.userservice.utils.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,14 +34,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.greensphere.userservice.enums.Status.*;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserServiceImpl {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ApiConnector apiConnector;
@@ -44,6 +53,7 @@ public class UserServiceImpl {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final TokenBlackListRepository tokenBlackListRepository;
 
 
     public void persistUser(AppUser appUser) {
@@ -56,12 +66,14 @@ public class UserServiceImpl {
 
     public BaseResponse<HashMap<String, Object>> registerInit(UserRegisterRequestDto registerInitRequest) {
         try {
+
             String mobile = PhoneNumberUtil.formatNumber(registerInitRequest.getMobile());
             String email = registerInitRequest.getEmail();
             String nic = registerInitRequest.getNic();
             Long govId = registerInitRequest.getGovId();
 
             AppUser appUser;
+
             List<AppUser> appUsers = userRepository.findAppUsersByNicOrMobileOrEmail(nic, mobile, email);
             if (!appUsers.isEmpty()) {
                 if (appUsers.size() > 1) {
@@ -133,7 +145,6 @@ public class UserServiceImpl {
 
             //API CALL NOTIFICATION SERVICE ->
             log.info("registerInit -> sending registration otp to user");
-            log.info("** sending otp to user ** ", otpMessage);
             SmsResponse smsResponse = apiConnector.sendSms(mobile, otpMessage);
             String otpStatus = smsResponse.getCode().equals(ResponseCodeUtil.SUCCESS_CODE) ? SENT.name() : FAILED.name();
             appUser.setOtp(otp);
@@ -147,6 +158,7 @@ public class UserServiceImpl {
             HashMap<String, Object> data = new HashMap<>();
             data.put("app_user_id", appUser.getUsername());
             data.put("mobile", mobile);
+            data.put("gov_id", appUser.getGovId());
             data.put("user_role", appUser.getRoles());
 
             return BaseResponse.<HashMap<String, Object>>builder()
@@ -173,7 +185,7 @@ public class UserServiceImpl {
                 return BaseResponse.<HashMap<String, Object>>builder()
                         .code(ResponseCodeUtil.FAILED_CODE)
                         .title(ResponseUtil.FAILED)
-                        .message("Cannot find user")
+                        .message("Cannot find the AppUser")
                         .build();
             }
 
@@ -193,6 +205,7 @@ public class UserServiceImpl {
             data.put("user_id", user.getUsername());
             data.put("user_status", user.getStatus());
             data.put("message", otpVerificationResponse.getMessage());
+            data.put("gov_id",user.getGovId());
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
                     .title(ResponseUtil.SUCCESS)
@@ -338,7 +351,7 @@ public class UserServiceImpl {
                         .build();
             }
 
-            boolean matches = passwordEncoder.matches(otp, appUser.getOtp());
+            boolean matches = otp.equals(appUser.getOtp());
             if (matches) {
                 appUser.setOtpStatus(VERIFIED.name());
                 appUser.setStatus(VERIFIED.name());
@@ -486,7 +499,7 @@ public class UserServiceImpl {
 
             } catch (BadCredentialsException e) {
                 int remainingAttempts = 0;
-                log.info("login -> Invalid credentials, user login attempts: " + loginUser.getLoginAttempts());
+                log.info("login -> Invalid credentials, user login attempts: {}", loginUser.getLoginAttempts());
 
                 Parameter parameter = parameterRepository.findParameterByName(AppConstants.LOGIN_ATTEMPTS);
                 if (parameter == null) {
@@ -497,7 +510,7 @@ public class UserServiceImpl {
                 int attempts = Integer.parseInt(parameter.getValue());
 
                 if (loginUser.getLoginAttempts() < attempts) {
-                    log.info("login -> remaining login attempts: " + loginUser.getLoginAttempts());
+                    log.info("login -> remaining login attempts: {}", loginUser.getLoginAttempts());
                     loginUser.setLoginAttempts(loginUser.getLoginAttempts() + 1);
                     persistUser(loginUser);
 
@@ -508,21 +521,21 @@ public class UserServiceImpl {
                         persistUser(loginUser);
                         log.info("User {} has been disabled due to exceeded login attempts.", loginUser.getUsername());
 
-                    //send login attempts exceeded sms
-                    Parameter smsExceeded = parameterRepository.findParameterByName(AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
-                    if (smsExceeded== null) {
-                        log.warn("login -> Missing Parameter -> " + AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
-                        throw new MissingParameterException("Parameter not found for given name: " + AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
-                    }
+                        //send login attempts exceeded sms
+                        Parameter smsExceeded = parameterRepository.findParameterByName(AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
+                        if (smsExceeded == null) {
+                            log.warn("login -> Missing Parameter -> " + AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
+                            throw new MissingParameterException("Parameter not found for given name: " + AppConstants.LOGIN_ATTEMPTS_EXCEEDED_MESSAGE);
+                        }
 
 
-                    log.info("Sending login attempts exceeded message to user {}.", loginUser.getUsername());
-                    String value = smsExceeded.getValue();
-                    String mobile = loginUser.getMobile();
-                    SmsResponse sms = apiConnector.sendSms(mobile, value);
-                    if (!ResponseCodeUtil.SUCCESS_CODE.equals(sms.getCode())) {
-                        log.error("Failed to send message to user {} at mobile number {}.", loginUser.getUsername(), loginUser.getMobile());
-                    }
+                        log.info("Sending login attempts exceeded message to user {}.", loginUser.getUsername());
+                        String value = smsExceeded.getValue();
+                        String mobile = loginUser.getMobile();
+                        SmsResponse sms = apiConnector.sendSms(mobile, value);
+                        if (!ResponseCodeUtil.SUCCESS_CODE.equals(sms.getCode())) {
+                            log.error("Failed to send message to user {} at mobile number {}.", loginUser.getUsername(), loginUser.getMobile());
+                        }
 
                         log.error("loguser -> login attempts exceeded");
                         return BaseResponse.<UserLoginResponse>builder()
@@ -531,7 +544,7 @@ public class UserServiceImpl {
                                 .message("Login attempts exceeded.Please contact the Bank")
                                 .build();
                     } else {
-                        log.error("loguser -> attempted failed. You have : " + remainingAttempts);
+                        log.error("loguser -> attempted failed. You have : {}", remainingAttempts);
                         return BaseResponse.<UserLoginResponse>builder()
                                 .code(ResponseCodeUtil.FAILED_CODE)
                                 .title(ResponseUtil.FAILED)
@@ -576,5 +589,39 @@ public class UserServiceImpl {
                 .message("Successfully logged in")
                 .data(data)
                 .build();
+    }
+
+    public BaseResponse<?> logOut(LogOutRequest logOutRequest) {
+        try {
+            List<TokenBlackList> blacklistTokens = tokenBlackListRepository.findAll();
+            log.info("signOutUser-> Delete Expired tokens from DB");
+            blacklistTokens.stream()
+                    .filter(token -> token.getExpiredTime().isBefore(LocalDateTime.now()))
+                    .forEach(tokenBlackListRepository::delete);
+
+            LocalDateTime expiredAt = DateUtil.convertDateToLocalDateTime(JWT.decode(logOutRequest.getToken()).getExpiresAt());
+
+            TokenBlackList blacklistToken = new TokenBlackList();
+            blacklistToken.setToken(logOutRequest.getToken());
+            blacklistToken.setExpiredTime(expiredAt);
+
+            tokenBlackListRepository.save(blacklistToken);
+
+            log.info("User log out  successfully ");
+            return BaseResponse.builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseStatus.SUCCESS.name())
+                    .message("User log out  successfully.")
+                    .build();
+
+        } catch (Exception e) {
+            log.warn("User log out failed : {}", e.getMessage());
+            return BaseResponse.builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message("User log out Failed.")
+                    .build();
+
+        }
     }
 }
