@@ -18,7 +18,6 @@ public class SetUpDetailsRequest {
     @Pattern(regexp = "^(?![ .]+$)[a-zA-Z .]*$", message = "Please enter a valid name")
     private String name;
 
-    @NotEmpty(message = "Profile image shouldn't be empty")
     private String profile;
 
     @JsonProperty("full_name")

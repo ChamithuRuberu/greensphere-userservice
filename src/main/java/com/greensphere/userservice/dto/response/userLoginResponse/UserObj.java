@@ -16,4 +16,6 @@ public class UserObj {
     private Long govId;
     private String city;
     private String status;
+    private String mobile;
+
 }
