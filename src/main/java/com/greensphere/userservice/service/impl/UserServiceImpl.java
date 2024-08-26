@@ -1,6 +1,9 @@
 package com.greensphere.userservice.service.impl;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.*;
+import com.greensphere.userservice.constants.LogMessage;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
@@ -11,6 +14,8 @@ import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRe
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.OtpVerifyResponse;
 import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsResponse;
+import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
+import com.greensphere.userservice.dto.response.tokenValidationResponse.UserResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
 import com.greensphere.userservice.entity.AppUser;
@@ -18,20 +23,26 @@ import com.greensphere.userservice.entity.Parameter;
 import com.greensphere.userservice.entity.Role;
 import com.greensphere.userservice.entity.TokenBlackList;
 import com.greensphere.userservice.enums.ResponseStatus;
+import com.greensphere.userservice.enums.Status;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.ParameterRepository;
 import com.greensphere.userservice.repository.TokenBlackListRepository;
 import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.service.ApiConnector;
+import com.greensphere.userservice.service.AuthUserDetailsService;
 import com.greensphere.userservice.service.UserService;
 import com.greensphere.userservice.utils.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -51,10 +62,12 @@ public class UserServiceImpl implements UserService {
     private final RoleServiceImpl roleService;
     private final ParameterRepository parameterRepository;
     private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final TokenBlackListRepository tokenBlackListRepository;
+    private final AuthUserDetailsService authUserDetailsService;
 
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     public void persistUser(AppUser appUser) {
         try {
@@ -205,7 +218,7 @@ public class UserServiceImpl implements UserService {
             data.put("user_id", user.getUsername());
             data.put("user_status", user.getStatus());
             data.put("message", otpVerificationResponse.getMessage());
-            data.put("gov_id",user.getGovId());
+            data.put("gov_id", user.getGovId());
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
                     .title(ResponseUtil.SUCCESS)
@@ -580,6 +593,7 @@ public class UserServiceImpl implements UserService {
                         .govId(loginUser.getGovId())
                         .city(loginUser.getCity())
                         .status(loginUser.getStatus())
+                        .mobile(loginUser.getMobile())
                         .build())
                 .build();
 
@@ -624,4 +638,130 @@ public class UserServiceImpl implements UserService {
 
         }
     }
+
+    @Override
+    public BaseResponse<UserAuthResponse> tokenValidation(String token, HttpServletRequest httpServletRequest) {
+        UserAuthResponse userAuthResponse = null;
+        UserResponse userResponse = null;
+
+        try {
+            boolean existsByToken = tokenBlackListRepository.existsByToken(token);
+            if (existsByToken) {
+                return BaseResponse.<UserAuthResponse>builder()
+                        .code(ResponseCodeUtil.CANNOT_FIND_USER)
+                        .title(ResponseStatus.FAILED.name())
+                        .message("Session Expired")
+                        .build();
+            }
+            if (token != null) {
+                log.info("Token parsing started");
+                String username = JWT.require(Algorithm.HMAC512(jwtSecret.getBytes()))
+                        .build()
+                        .verify(token)
+                        .getSubject();
+
+                if (username != null) {
+                    log.info("Username extracted from token: {}", username);
+                    AppUser user = userRepository.findAppUserByUsername(username);
+                    UserDetails userDetails = authUserDetailsService.loadUserByUsername(user.getEmail());
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails,
+                            null, userDetails.getAuthorities());
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+
+                    if (ObjectUtils.isEmpty(user)) {
+                        log.warn("User not found for username: {}", username);
+                        log.warn(LogMessage.CAN_NOT_FIND_USER);
+                        return BaseResponse.<UserAuthResponse>builder()
+                                .code(ResponseCodeUtil.CANNOT_FIND_USER)
+                                .title(ResponseStatus.FAILED.name())
+                                .message("User not found.")
+                                .build();
+                    }
+
+                    if (!Status.ACTIVE.name().equals(user.getStatus())) {
+                        log.warn(LogMessage.USER_DISABLED);
+                        return BaseResponse.<UserAuthResponse>builder()
+                                .code(ResponseCodeUtil.DISABLE_USER_ERROR_CODE)
+                                .title(ResponseStatus.FAILED.name())
+                                .message(LogMessage.USER_DISABLED)
+                                .build();
+                    }
+
+                    // The only condition where userResponse and userAuthResponse should be built
+                    userResponse = UserResponse.builder()
+                            .username(user.getUsername())
+                            .mobile(user.getMobile())
+                            .nic(user.getNic())
+                            .status(user.getStatus())
+                            .email(user.getEmail())
+                            .dob(user.getDob())
+                            .addressNo(user.getAddressNo())
+                            .city(user.getCity())
+                            .name(user.getFullName())
+                            .build();
+
+                    userAuthResponse = UserAuthResponse.builder()
+                            .appUser(userResponse)
+                            .build();
+
+                    return BaseResponse.<UserAuthResponse>builder()
+                            .code(ResponseCodeUtil.SUCCESS_CODE)
+                            .title(ResponseStatus.SUCCESS.name())
+                            .message("Successfully User Authenticated.")
+                            .data(userAuthResponse)
+                            .build();
+                }
+            }
+        } catch (AlgorithmMismatchException e) {
+            log.error("filterInternal-> Exception: JWT algorithm mismatched");
+            return BaseResponse.<UserAuthResponse>builder()
+                    .code(ResponseCodeUtil.JWT_TOKEN_VALIDATE_ERROR_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message(LogMessage.INVALID_CREDENTIAL)
+                    .build();
+        } catch (SignatureVerificationException e) {
+            log.error("filterInternal-> Exception: JWT signature verification failed");
+            return BaseResponse.<UserAuthResponse>builder()
+                    .code(ResponseCodeUtil.JWT_TOKEN_VALIDATE_ERROR_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message(LogMessage.INVALID_CREDENTIAL)
+                    .build();
+        } catch (TokenExpiredException e) {
+            log.error("filterInternal-> Exception: JWT expired");
+            return BaseResponse.<UserAuthResponse>builder()
+                    .code(ResponseCodeUtil.JWT_TOKEN_EXPIRED_ERROR_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message(LogMessage.INVALID_CREDENTIAL)
+                    .build();
+        } catch (InvalidClaimException e) {
+            log.error("filterInternal-> Exception: JWT claim not valid");
+            return BaseResponse.<UserAuthResponse>builder()
+                    .code(ResponseCodeUtil.JWT_TOKEN_VALIDATE_ERROR_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message(LogMessage.INVALID_CREDENTIAL)
+                    .build();
+        } catch (JWTVerificationException e) {
+            log.error("filterInternal-> Exception: JWT verification failed");
+            return BaseResponse.<UserAuthResponse>builder()
+                    .code(ResponseCodeUtil.JWT_TOKEN_VALIDATE_ERROR_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message(LogMessage.INVALID_CREDENTIAL)
+                    .build();
+        } catch (Exception e) {
+            log.error("tokenValidation -> Exception : " + e.getMessage(), e);
+            return BaseResponse.<UserAuthResponse>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message("Internal error occurred in token validation process.")
+                    .data(userAuthResponse)
+                    .build();
+        }
+
+        return BaseResponse.<UserAuthResponse>builder()
+                .code(ResponseCodeUtil.FAILED_CODE)
+                .title(ResponseStatus.FAILED.name())
+                .message("Failed User Authenticated.")
+                .build();
+    }
+
 }

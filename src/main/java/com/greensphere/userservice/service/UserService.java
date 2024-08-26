@@ -7,7 +7,9 @@ import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
+import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 
@@ -23,4 +25,6 @@ public interface UserService {
     BaseResponse<UserLoginResponse> login(UserLoginRequest loginRequest);
 
     BaseResponse<?> logOut(LogOutRequest logOutRequest);
+
+    BaseResponse<UserAuthResponse> tokenValidation(String token, HttpServletRequest httpServletRequest);
 }
