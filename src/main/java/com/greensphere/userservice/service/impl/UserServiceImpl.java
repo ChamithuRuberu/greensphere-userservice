@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.*;
 import com.greensphere.userservice.constants.LogMessage;
+import com.greensphere.userservice.dto.request.UpdateUserDetailsRequest;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
@@ -13,6 +14,7 @@ import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestD
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.OtpVerifyResponse;
+import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserResponse;
@@ -702,6 +704,7 @@ public class UserServiceImpl implements UserService {
 
                     userAuthResponse = UserAuthResponse.builder()
                             .appUser(userResponse)
+                            .userDetails(userDetails)
                             .build();
 
                     return BaseResponse.<UserAuthResponse>builder()
@@ -762,6 +765,40 @@ public class UserServiceImpl implements UserService {
                 .title(ResponseStatus.FAILED.name())
                 .message("Failed User Authenticated.")
                 .build();
+    }
+
+    @Override
+    public BaseResponse<UpdateUserDetailsResponse> updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest, AppUser appUser) {
+
+        String email = updateUserDetailsRequest.getEmail();
+        String mobile = updateUserDetailsRequest.getMobile();
+        boolean isExist = userRepository.existsByEmailAndAndMobile(email, mobile);
+
+        if (isExist) {
+            return BaseResponse.<UpdateUserDetailsResponse>builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message("Inputs are already exist")
+                    .build();
+        }
+        AppUser appUserByUsername = userRepository.findAppUserByUsername(appUser.getUsername());
+        appUserByUsername.setEmail(email);
+        appUserByUsername.setMobile(mobile);
+        appUserByUsername.setFullName(updateUserDetailsRequest.getFullname());
+        userRepository.save(appUserByUsername);
+
+        UpdateUserDetailsResponse updateUserDetailsResponse = new UpdateUserDetailsResponse();
+        updateUserDetailsResponse.setEmail(email);
+        updateUserDetailsResponse.setMobile(mobile);
+        updateUserDetailsResponse.setFullName(appUser.getFullName());
+
+        return BaseResponse.<UpdateUserDetailsResponse>builder()
+                .code(ResponseCodeUtil.FAILED_CODE)
+                .title(ResponseStatus.FAILED.name())
+                .message("Inputs are already exist")
+                .data(updateUserDetailsResponse)
+                .build();
+
     }
 
 }
