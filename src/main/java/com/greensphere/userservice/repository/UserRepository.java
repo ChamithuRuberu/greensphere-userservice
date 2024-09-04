@@ -19,4 +19,5 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
 
     List<AppUser> findAppUsersByNicOrMobileOrEmail(String nic, String mobile, String email);
 
+    boolean existsByEmailAndAndMobile(String email, String mobile);
 }
