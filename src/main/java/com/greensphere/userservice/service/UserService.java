@@ -32,4 +32,6 @@ public interface UserService {
     BaseResponse<UserAuthResponse> tokenValidation(String token, HttpServletRequest httpServletRequest);
 
     BaseResponse<UpdateUserDetailsResponse> updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest, AppUser appUser);
+
+    BaseResponse<HashMap<String, Object>> getAllGovUsers();
 }

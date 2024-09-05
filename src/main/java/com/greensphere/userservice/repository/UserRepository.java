@@ -20,4 +20,7 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
     List<AppUser> findAppUsersByNicOrMobileOrEmail(String nic, String mobile, String email);
 
     boolean existsByEmailAndAndMobile(String email, String mobile);
+
+    @Query(value = "SELECT * FROM app_user u WHERE u.gov_id IS NOT NULL",nativeQuery = true)
+    List<AppUser> findAppUsersWithGovId();
 }

@@ -801,4 +801,37 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    public BaseResponse<HashMap<String, Object>> getAllGovUsers() {
+        List<AppUser> all = userRepository.findAppUsersWithGovId();
+
+        if (all == null || all.isEmpty()) {
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message("No Government users Found")
+                    .build();
+        }
+
+        HashMap<String, Object> hashMap = new HashMap<>();
+
+        for (AppUser allUser : all) {
+            HashMap<String, Object> userMap = new HashMap<>();
+            userMap.put("id", allUser.getId());
+            userMap.put("username", allUser.getUsername());
+            userMap.put("fullName", allUser.getFullName());
+            userMap.put("email", allUser.getEmail());
+            userMap.put("mobile", allUser.getMobile());
+            // You might want to add each user's data to a list if you expect multiple users.
+            hashMap.put("id :" + allUser.getId(), userMap);
+        }
+
+        return BaseResponse.<HashMap<String, Object>>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseStatus.SUCCESS.name())
+                .message("Data retrieved successfully")
+                .data(hashMap)
+                .build();
+    }
+
 }

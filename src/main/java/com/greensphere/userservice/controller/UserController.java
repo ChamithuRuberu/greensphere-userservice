@@ -152,4 +152,19 @@ public class UserController {
         }
     }
 
+    @PostMapping("/get-gov-users")
+    public ResponseEntity<DefaultResponse> getAllGovUsers(){
+        BaseResponse<HashMap<String, Object>> response = userService.getAllGovUsers();
+
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage()));
+        }
+    }
+
 }
