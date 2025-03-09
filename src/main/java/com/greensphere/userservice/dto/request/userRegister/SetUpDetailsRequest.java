@@ -47,4 +47,9 @@ public class SetUpDetailsRequest {
 
     @JsonProperty("role_type")
     private String roleType;
+
+    private String servicePeriod;
+    private String weight;
+    private String height;
+    private String injuries;
 }

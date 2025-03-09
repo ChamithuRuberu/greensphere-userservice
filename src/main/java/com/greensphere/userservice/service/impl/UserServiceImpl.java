@@ -20,15 +20,13 @@ import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuth
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
-import com.greensphere.userservice.entity.AppUser;
-import com.greensphere.userservice.entity.Parameter;
-import com.greensphere.userservice.entity.Role;
-import com.greensphere.userservice.entity.TokenBlackList;
+import com.greensphere.userservice.entity.*;
 import com.greensphere.userservice.enums.ResponseStatus;
 import com.greensphere.userservice.enums.Status;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.ParameterRepository;
 import com.greensphere.userservice.repository.TokenBlackListRepository;
+import com.greensphere.userservice.repository.TrainerRepository;
 import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.service.ApiConnector;
 import com.greensphere.userservice.service.AuthUserDetailsService;
@@ -67,6 +65,7 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final TokenBlackListRepository tokenBlackListRepository;
     private final AuthUserDetailsService authUserDetailsService;
+    private final TrainerRepository trainerRepository;
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -74,6 +73,13 @@ public class UserServiceImpl implements UserService {
     public void persistUser(AppUser appUser) {
         try {
             userRepository.save(appUser);
+        } catch (Exception e) {
+            log.error("persistUser-> Exception: {}", e.getMessage(), e);
+        }
+    }
+    public void persistTrainer(Trainer trainer) {
+        try {
+            trainerRepository.save(trainer);
         } catch (Exception e) {
             log.error("persistUser-> Exception: {}", e.getMessage(), e);
         }
@@ -115,7 +121,7 @@ public class UserServiceImpl implements UserService {
                 }
             } else {
                 // save app appUser in INITIALIZED status
-                if (registerInitRequest.getRoleType().equals("ROLE_GOVERNMENT_USER")) {
+                if (registerInitRequest.getRoleType().equals("ROLE_TRAINER")) {
                     appUser = AppUser.builder()
                             .mobile(mobile)
                             .email(email)
@@ -134,6 +140,7 @@ public class UserServiceImpl implements UserService {
                             .mobile(mobile)
                             .email(email)
                             .nic(nic)
+                            .govId(registerInitRequest.getGovId())
                             .build();
                     Role roleByName = roleService.getRoleByName(registerInitRequest.getRoleType());
                     Set<Role> objects = new HashSet<>();
@@ -144,6 +151,7 @@ public class UserServiceImpl implements UserService {
 
                 }
             }
+            appUser.setGovId(registerInitRequest.getGovId());
             Parameter otpLengthParameter = parameterRepository.findParameterByName(AppConstants.OTP_LENGTH);
             if (otpLengthParameter == null) {
                 log.warn("registerInit -> OTP_LENGTH parameter is missing from database");
@@ -173,7 +181,7 @@ public class UserServiceImpl implements UserService {
             HashMap<String, Object> data = new HashMap<>();
             data.put("app_user_id", appUser.getUsername());
             data.put("mobile", mobile);
-            data.put("gov_id", appUser.getGovId());
+            data.put("trainer_id", appUser.getGovId());
             data.put("user_role", appUser.getRoles());
 
             return BaseResponse.<HashMap<String, Object>>builder()
@@ -220,7 +228,7 @@ public class UserServiceImpl implements UserService {
             data.put("user_id", user.getUsername());
             data.put("user_status", user.getStatus());
             data.put("message", otpVerificationResponse.getMessage());
-            data.put("gov_id", user.getGovId());
+            data.put("trainer_id", user.getGovId());
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
                     .title(ResponseUtil.SUCCESS)
@@ -280,7 +288,7 @@ public class UserServiceImpl implements UserService {
             user.setAddressNo(setUpDetailsRequest.getAddressNo());
             user.setAddressStreet(setUpDetailsRequest.getAddressStreet());
             user.setCity(setUpDetailsRequest.getCity());
-            user.setStatus(SAVED.name());
+            user.setStatus(ACTIVE.name());
             user.setDob(setUpDetailsRequest.getBirthOfDate());
             user.setPassword(setUpDetailsRequest.getPassword());
             user.setPostalCode(setUpDetailsRequest.getPostalCode());
@@ -424,7 +432,7 @@ public class UserServiceImpl implements UserService {
                         .message("User doesn't have any roles")
                         .build();
             }
-            Role role = roles.stream().filter(r -> r.getName().equals("ROLE_GOVERNMENT_USER")).findAny().orElse(null);
+            Role role = roles.stream().filter(r -> r.getName().equals("ROLE_TRAINER")).findAny().orElse(null);
             if (role == null) {
                 log.warn("saveUserCredentials -> User doesn't have APP_USER privileges");
                 return BaseResponse.<HashMap<String, Object>>builder()
@@ -442,12 +450,35 @@ public class UserServiceImpl implements UserService {
 
             String token = jwtUtil.createJwtToken(tokenRequest);
             String refreshToken = jwtUtil.createRefreshToken(tokenRequest);
-            user.setStatus(SAVED.name());
+
+            user.setStatus(ACTIVE.name());
             user.setRegisteredAt(LocalDateTime.now());
             user.setPassword(govUserRegisterRequest.getPassword());
             user.setCity(govUserRegisterRequest.getCity());
             user.setFullName(govUserRegisterRequest.getName());
             persistUser(user);
+
+            Trainer isExist = trainerRepository.findByTrainerId(user.getGovId());
+            if (isExist == null) {
+                Trainer trainer = new Trainer();
+                trainer.setName(user.getFullName());
+                trainer.setTrainerId(user.getGovId());
+                trainer.setWeight(govUserRegisterRequest.getWeight());
+                trainer.setServicePeriod(govUserRegisterRequest.getServicePeriod());
+                trainer.setProfile(govUserRegisterRequest.getProfile());
+                trainer.setHeight(govUserRegisterRequest.getHeight());
+                persistTrainer(trainer);
+                log.info("govUserSignUp -> Trainer has been saved");
+            }else {
+                isExist.setTrainerId(user.getGovId());
+                isExist.setName(user.getFullName());
+                isExist.setHeight(govUserRegisterRequest.getHeight());
+                isExist.setWeight(govUserRegisterRequest.getWeight());
+                isExist.setServicePeriod(govUserRegisterRequest.getServicePeriod());
+                isExist.setProfile(govUserRegisterRequest.getProfile());
+                persistTrainer(isExist);
+            }
+
 
             HashMap<String, Object> userObj = new HashMap<>();
             userObj.put("full_name", user.getFullName());

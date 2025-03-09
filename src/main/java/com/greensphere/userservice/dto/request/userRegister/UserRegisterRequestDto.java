@@ -14,6 +14,6 @@ public class UserRegisterRequestDto {
     @NotEmpty(message = "roleType should not be empty")
     @JsonProperty("role_type")
     private String roleType;
-    @JsonProperty("gov_id")
+    @JsonProperty("trainer_id")
     private Long govId;
 }

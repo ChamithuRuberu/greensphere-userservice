@@ -18,5 +18,9 @@ public class GovUserRegisterRequest {
     private String password;
     @JsonProperty("role_type")
     private String roleType;
+    private String servicePeriod;
+    private String weight;
+    private String height;
+    private String profile;
 
 }
