@@ -1,28 +1,28 @@
 package com.greensphere.userservice.controller;
 
+import com.greensphere.userservice.dto.request.workout.GetWorkoutsRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.DefaultResponse;
-import com.greensphere.userservice.service.TrainerService;
+import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
+import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
+import com.greensphere.userservice.entity.AppUser;
+import com.greensphere.userservice.service.WorkoutService;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.HashMap;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/trainer")
+@RequestMapping("/workout")
 @RequiredArgsConstructor
-public class TrainerController {
+public class WorkoutController {
 
-    private final TrainerService trainerService;
+    private final WorkoutService workoutService;
 
-    @PostMapping("/get-all-trainers")
-    public ResponseEntity<DefaultResponse> getAllTrainers() {
-        BaseResponse<HashMap<String, Object>> response = trainerService.getAllTrainers();
+    @PostMapping("/get-workouts")
+    public ResponseEntity<DefaultResponse>getWorkoutsByUsername(@RequestAttribute("user") AppUser appUser , @RequestBody GetWorkoutsRequest request) {
+        BaseResponse<GetAllWorkoutsResponse> response = workoutService.getWorkoutsByUsername(appUser,request);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
         } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
@@ -36,4 +36,3 @@ public class TrainerController {
 
 
 }
-

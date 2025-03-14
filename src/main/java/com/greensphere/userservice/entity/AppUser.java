@@ -50,15 +50,17 @@ public class AppUser extends BaseEntity {
     private LocalDateTime otpSentAt;
     @Column(columnDefinition = "int default 0")
     private int otpAttempts;
+    private boolean enabled;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",
-            joinColumns = @JoinColumn(
-                    name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(
-                    name = "role_id", referencedColumnName = "id"))
-    private Collection<Role> roles = new ArrayList<>();
+            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
+    )
+    @Builder.Default
+    private Collection<Role> roles = new ArrayList<>(); // Initialize roles
+
 
     @Transient
     private Collection<GrantedAuthority> grantedAuthoritiesList = new ArrayList<>();

@@ -22,5 +22,6 @@ public class GovUserRegisterRequest {
     private String weight;
     private String height;
     private String profile;
+    private String trainerId;
 
 }

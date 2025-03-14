@@ -39,16 +39,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.greensphere.userservice.enums.Status.*;
 
@@ -276,6 +275,17 @@ public class UserServiceImpl implements UserService {
                         .message("User doesn't have app user privileges")
                         .build();
             }
+
+            Trainer byTrainerId = trainerRepository.findByTrainerId(setUpDetailsRequest.getTrainerId());
+            if (byTrainerId == null) {
+                log.warn("saveUserCredentials -> Trainer doesn't have any trainers");
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.SUCCESS_CODE)
+                        .title(ResponseUtil.SUCCESS)
+                        .message("No Trainers Found ")
+                        .build();
+            }
+
             TokenRequest tokenRequest = TokenRequest.builder()
                     .username(user.getUsername())
                     .role(role.getName())
@@ -308,6 +318,7 @@ public class UserServiceImpl implements UserService {
             HashMap<String, Object> data = new HashMap<>();
             data.put("token", token);
             data.put("refresh_token", refreshToken);
+            data.put("trainer_obj", byTrainerId);
             data.put("user", userObj);
 
             log.info("saveUserCredentials -> User password saved");
@@ -458,25 +469,31 @@ public class UserServiceImpl implements UserService {
             user.setFullName(govUserRegisterRequest.getName());
             persistUser(user);
 
-            Trainer isExist = trainerRepository.findByTrainerId(user.getGovId());
-            if (isExist == null) {
+            Trainer isExist = trainerRepository.findByTrainerId(String.valueOf(govUserRegisterRequest.getTrainerId()));
+            HashMap<String, Object> data = new HashMap<>();
+
+            if (ObjectUtils.isEmpty(isExist)) { // If no record exists, create new trainer
                 Trainer trainer = new Trainer();
                 trainer.setName(user.getFullName());
-                trainer.setTrainerId(user.getGovId());
+                trainer.setTrainerId(String.valueOf(user.getGovId()));
                 trainer.setWeight(govUserRegisterRequest.getWeight());
                 trainer.setServicePeriod(govUserRegisterRequest.getServicePeriod());
                 trainer.setProfile(govUserRegisterRequest.getProfile());
                 trainer.setHeight(govUserRegisterRequest.getHeight());
                 persistTrainer(trainer);
-                log.info("govUserSignUp -> Trainer has been saved");
-            }else {
-                isExist.setTrainerId(user.getGovId());
+                log.info("trainerSignUp -> Trainer has been saved");
+
+                data.put("trainer_obj", trainer); // Store created trainer
+            } else {
+                isExist.setTrainerId(String.valueOf(user.getGovId()));
                 isExist.setName(user.getFullName());
                 isExist.setHeight(govUserRegisterRequest.getHeight());
                 isExist.setWeight(govUserRegisterRequest.getWeight());
                 isExist.setServicePeriod(govUserRegisterRequest.getServicePeriod());
                 isExist.setProfile(govUserRegisterRequest.getProfile());
                 persistTrainer(isExist);
+
+                data.put("trainer_obj", isExist); // Store updated trainer
             }
 
 
@@ -485,13 +502,13 @@ public class UserServiceImpl implements UserService {
             userObj.put("status", user.getStatus());
             userObj.put("city", user.getCity());
             userObj.put("email", user.getEmail());
-            userObj.put("user_id", user.getGovId());
+            userObj.put("trainer_id", user.getGovId());
 
 
-            HashMap<String, Object> data = new HashMap<>();
             data.put("token", token);
             data.put("refresh_token", refreshToken);
             data.put("user", userObj);
+            data.put("trainer_obj",isExist);
 
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
@@ -609,13 +626,16 @@ public class UserServiceImpl implements UserService {
         }
 
         TokenRequest tokenRequest = TokenRequest.builder()
-                .role(loginRequest.getRoleType())
-                .username(loginUser.getUsername())
+                .role(loginUser.getRoles().stream()
+                        .findFirst() // Get the first role available
+                        .map(Role::getName) // Extract the role name
+                        .orElseThrow(() -> new RuntimeException("No roles found for the user")))                 .username(loginUser.getUsername())
                 .now(LocalDateTime.now())
                 .build();
 
         String token = jwtUtil.createJwtToken(tokenRequest);
         String refreshToken = jwtUtil.createRefreshToken(tokenRequest);
+
 
         UserLoginResponse data = UserLoginResponse.builder()
                 .token(token)
@@ -628,6 +648,7 @@ public class UserServiceImpl implements UserService {
                         .status(loginUser.getStatus())
                         .mobile(loginUser.getMobile())
                         .build())
+                .roles(loginUser.getRoles())
                 .build();
 
         return BaseResponse.<UserLoginResponse>builder()

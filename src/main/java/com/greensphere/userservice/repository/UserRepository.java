@@ -23,4 +23,6 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
 
     @Query(value = "SELECT * FROM app_user u WHERE u.gov_id IS NOT NULL",nativeQuery = true)
     List<AppUser> findAppUsersWithGovId();
+
+    boolean existsByUsername(String superAdminUsername);
 }

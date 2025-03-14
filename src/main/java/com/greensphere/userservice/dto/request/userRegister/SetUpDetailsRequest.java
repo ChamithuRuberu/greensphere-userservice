@@ -52,4 +52,5 @@ public class SetUpDetailsRequest {
     private String weight;
     private String height;
     private String injuries;
+    private String trainerId;
 }

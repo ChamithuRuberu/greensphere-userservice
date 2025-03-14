@@ -1,0 +1,12 @@
+package com.greensphere.userservice.service;
+
+import com.greensphere.userservice.dto.request.workout.GetWorkoutsRequest;
+import com.greensphere.userservice.dto.response.BaseResponse;
+import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
+import com.greensphere.userservice.entity.AppUser;
+
+public interface WorkoutService {
+    BaseResponse<GetAllWorkoutsResponse> getWorkoutsByUsername(AppUser appUser, GetWorkoutsRequest request);
+
+
+}

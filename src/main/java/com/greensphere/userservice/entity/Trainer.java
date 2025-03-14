@@ -14,7 +14,7 @@ public class Trainer {
     @SequenceGenerator(name = "trainer_sequence", sequenceName = "trainer_sequence", allocationSize = 1)
     private Long id;
     private String name;
-    private Long trainerId;
+    private String trainerId;
     private String servicePeriod;
     private String weight;
     private String height;

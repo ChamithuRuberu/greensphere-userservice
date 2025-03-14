@@ -14,10 +14,11 @@ public class WorkOuts extends BaseEntity {
     @SequenceGenerator(name = "workout_sequence",sequenceName = "workout_sequence")
     private Long id;
     private String name;
-    private String description;
     private String reps;
     private String sets;
     private String weight;
     private String status;
     private String workoutHistoryId;
+    private String username;
+    private String trainerId;
 }
