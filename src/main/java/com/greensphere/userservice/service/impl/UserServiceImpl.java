@@ -178,7 +178,7 @@ public class UserServiceImpl implements UserService {
             persistUser(appUser);
 
             HashMap<String, Object> data = new HashMap<>();
-            data.put("app_user_id", appUser.getUsername());
+            data.put("username", appUser.getUsername());
             data.put("mobile", mobile);
             data.put("trainer_id", appUser.getGovId());
             data.put("user_role", appUser.getRoles());

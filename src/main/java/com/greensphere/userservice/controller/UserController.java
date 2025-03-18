@@ -62,7 +62,7 @@ public class UserController {
         }
     }
 
-    @PostMapping(path = "/app-user/register")   
+    @PostMapping(path = "/client-register")
 //    @PreAuthorize("hasAuthority('APP_USER')")
     public ResponseEntity<DefaultResponse> appUserSetUpDetails(@Valid @RequestBody SetUpDetailsRequest setUpDetailsRequest) {
         BaseResponse<HashMap<String, Object>> response = userService.setUpDetails(setUpDetailsRequest);

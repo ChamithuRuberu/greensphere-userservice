@@ -45,6 +45,7 @@ public class SuperAdminService implements CommandLineRunner {
                             .username(superAdminUsername)
                             .password(passwordEncoder.encode("ADMIN")) // Encode the password
                             .email("admin@example.com") // Provide a valid email
+                            .status("ACTIVE")
                             .enabled(true) // Enable the user
                             .roles(Set.of(superAdminRole)) // Assign the role as a Set
                             .build();
