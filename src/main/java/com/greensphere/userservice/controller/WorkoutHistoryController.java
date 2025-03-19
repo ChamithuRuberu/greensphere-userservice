@@ -5,5 +5,5 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("workout-history")
-public class TrainerHistoryController {
+public class WorkoutHistoryController {
 }
