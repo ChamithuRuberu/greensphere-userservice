@@ -42,10 +42,10 @@ public class WorkoutHistory extends BaseEntity {
     private String goal;
     
     @Column(nullable = false)
-    private LocalDateTime programStartDate;
+    private String programStartDate;
     
     @Column(nullable = false)
-    private LocalDateTime programEndDate;
+    private String programEndDate;
     
     @Column(nullable = false)
     private String status = "ACTIVE"; // ACTIVE, COMPLETED, PAUSED

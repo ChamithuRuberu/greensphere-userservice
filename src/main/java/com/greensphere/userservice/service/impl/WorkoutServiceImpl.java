@@ -56,8 +56,8 @@ public class WorkoutServiceImpl implements WorkoutService {
             
             // Convert string dates to LocalDateTime
             try {
-                workoutHistory.setProgramStartDate(LocalDateTime.parse(request.getStartDate()));
-                workoutHistory.setProgramEndDate(LocalDateTime.parse(request.getEndDate()));
+                workoutHistory.setProgramStartDate(request.getStartDate());
+                workoutHistory.setProgramEndDate(request.getEndDate());
             } catch (DateTimeParseException e) {
                 throw new IllegalArgumentException("Invalid date format. Use ISO format (yyyy-MM-dd'T'HH:mm:ss)");
             }
