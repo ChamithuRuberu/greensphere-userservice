@@ -33,5 +33,4 @@ public interface UserService {
 
     BaseResponse<UpdateUserDetailsResponse> updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest, AppUser appUser);
 
-    BaseResponse<HashMap<String, Object>> getAllGovUsers();
 }

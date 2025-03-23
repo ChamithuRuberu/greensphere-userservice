@@ -47,7 +47,15 @@ public class AuthUserDetailsService implements UserDetailsService {
 
     private AppUser getAppUserDetails(String email) {
         Collection<GrantedAuthority> grantedAuthoritiesList = new ArrayList<>();
-        AppUser appUser = userRepository.findAppUserByEmail(email);
+        AppUser appUser = null;
+
+        if (email.contains("@")) {
+            appUser = userRepository.findAppUserByEmail(email);
+
+        } else {
+            appUser = userRepository.findAppUserByUsername(email);
+        }
+
         if (appUser != null) {
             Hibernate.initialize(appUser.getRoles());
             appUser.getRoles().forEach(role -> {

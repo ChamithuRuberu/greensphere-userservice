@@ -25,4 +25,6 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
     List<AppUser> findAppUsersWithGovId();
 
     boolean existsByUsername(String superAdminUsername);
+
+    List<AppUser> findAllByGovIdAndRoleType(Long govId, String roleType);
 }

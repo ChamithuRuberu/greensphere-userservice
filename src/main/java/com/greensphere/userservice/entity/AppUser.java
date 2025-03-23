@@ -41,6 +41,7 @@ public class AppUser extends BaseEntity {
     private int loginAttempts;
     private String status;
     private String postalCode;
+    private String roleType;
     private LocalDateTime registeredAt;
 
     private String otp;

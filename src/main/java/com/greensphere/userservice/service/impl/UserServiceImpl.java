@@ -39,8 +39,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
@@ -304,6 +302,8 @@ public class UserServiceImpl implements UserService {
             user.setPostalCode(setUpDetailsRequest.getPostalCode());
             user.setRegisteredAt(LocalDateTime.now());
             user.setRegisteredAt(LocalDateTime.now());
+            user.setGovId(Long.valueOf(setUpDetailsRequest.getTrainerId()));
+            user.setRoleType("ROLE_USER");
             persistUser(user);
             log.info("setUpDetails-> User password setup details");
 
@@ -467,6 +467,7 @@ public class UserServiceImpl implements UserService {
             user.setPassword(govUserRegisterRequest.getPassword());
             user.setCity(govUserRegisterRequest.getCity());
             user.setFullName(govUserRegisterRequest.getName());
+            user.setRoleType("ROLE_TRAINER");
             persistUser(user);
 
             Trainer isExist = trainerRepository.findByTrainerId(String.valueOf(govUserRegisterRequest.getTrainerId()));
@@ -480,6 +481,11 @@ public class UserServiceImpl implements UserService {
                 trainer.setServicePeriod(govUserRegisterRequest.getServicePeriod());
                 trainer.setProfile(govUserRegisterRequest.getProfile());
                 trainer.setHeight(govUserRegisterRequest.getHeight());
+                trainer.setEmail(user.getEmail());
+                trainer.setMobile(user.getMobile());
+                trainer.setLocation(user.getCity());
+                trainer.setRating("100%");
+
                 persistTrainer(trainer);
                 log.info("trainerSignUp -> Trainer has been saved");
 
@@ -491,6 +497,11 @@ public class UserServiceImpl implements UserService {
                 isExist.setWeight(govUserRegisterRequest.getWeight());
                 isExist.setServicePeriod(govUserRegisterRequest.getServicePeriod());
                 isExist.setProfile(govUserRegisterRequest.getProfile());
+                isExist.setRating("100%");
+                isExist.setEmail(user.getEmail());
+                isExist.setMobile(user.getMobile());
+                isExist.setLocation(user.getCity());
+
                 persistTrainer(isExist);
 
                 data.put("trainer_obj", isExist); // Store updated trainer
@@ -851,39 +862,6 @@ public class UserServiceImpl implements UserService {
                 .data(updateUserDetailsResponse)
                 .build();
 
-    }
-
-    @Override
-    public BaseResponse<HashMap<String, Object>> getAllGovUsers() {
-        List<AppUser> all = userRepository.findAppUsersWithGovId();
-
-        if (all == null || all.isEmpty()) {
-            return BaseResponse.<HashMap<String, Object>>builder()
-                    .code(ResponseCodeUtil.FAILED_CODE)
-                    .title(ResponseStatus.FAILED.name())
-                    .message("No Government users Found")
-                    .build();
-        }
-
-        HashMap<String, Object> hashMap = new HashMap<>();
-
-        for (AppUser allUser : all) {
-            HashMap<String, Object> userMap = new HashMap<>();
-            userMap.put("id", allUser.getId());
-            userMap.put("username", allUser.getUsername());
-            userMap.put("fullName", allUser.getFullName());
-            userMap.put("email", allUser.getEmail());
-            userMap.put("mobile", allUser.getMobile());
-            // You might want to add each user's data to a list if you expect multiple users.
-            hashMap.put("id :" + allUser.getId(), userMap);
-        }
-
-        return BaseResponse.<HashMap<String, Object>>builder()
-                .code(ResponseCodeUtil.SUCCESS_CODE)
-                .title(ResponseStatus.SUCCESS.name())
-                .message("Data retrieved successfully")
-                .data(hashMap)
-                .build();
     }
 
 }

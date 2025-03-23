@@ -19,4 +19,8 @@ public class Trainer {
     private String weight;
     private String height;
     private String profile;
+    private String mobile;
+    private String email;
+    private String location;
+    private String rating;
 }
