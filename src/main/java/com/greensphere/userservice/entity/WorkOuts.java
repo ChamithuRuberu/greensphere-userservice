@@ -18,21 +18,37 @@ public class WorkOuts extends BaseEntity {
     @SequenceGenerator(name = "workout_sequence", sequenceName = "workout_sequence")
     private Long id;
     
-    // Exercise details
-    private String name;
-    private String reps;
-    private String sets;
-    private String weight;
-    private String exerciseNotes;  // Added for exercise-specific notes
+    // Program Context
+    private int weekNumber;
+    private String focusArea;      // UPPER_BODY, LOWER_BODY, etc.
+    private String intensity;      // LOW, MEDIUM, HIGH
     
-    // Workout schedule details
+    // Exercise Details
+    private String name;
+    private String sets;
+    private String reps;
+    private String weight;
+    private String equipment;
+    private String targetMuscles;
+    private String exerciseNotes;
+    private String restBetweenSets;
+    private String tempo;
+    private Boolean isDropSet;
+    private Boolean isSuperSet;
+    private String superSetGroup;
+    private String progressionStrategy;
+    
+    // Workout Schedule
     private String type;           // e.g., "Strength", "Cardio"
     private String day;            // e.g., "Monday", "Wednesday"
     private String duration;       // Duration in minutes
-    private String notes;          // General workout notes
+    private String warmupNotes;
+    private String cooldownNotes;
+    private String generalNotes;
+    private Boolean isRestDay;
     
-    // Status and user info
-    private String status;
+    // Status and User Info
+    private String status;         // PLANNED, COMPLETED, SKIPPED
     private String username;
     private String trainerId;
     private String startDateTime;

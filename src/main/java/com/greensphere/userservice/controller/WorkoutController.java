@@ -2,6 +2,7 @@ package com.greensphere.userservice.controller;
 
 import com.greensphere.userservice.dto.request.workout.CreateWorkoutRequest;
 import com.greensphere.userservice.dto.request.workout.GetWorkoutsRequest;
+import com.greensphere.userservice.dto.request.workout.UpdateWorkoutHistoryRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.DefaultResponse;
 import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
@@ -49,5 +50,28 @@ public class WorkoutController {
         }
     }
 
+    @PostMapping("/update-workout-history")
+    public ResponseEntity<DefaultResponse> updateWorkoutHistory(
+            @RequestAttribute("user") AppUser appUser,
+            @RequestBody UpdateWorkoutHistoryRequest request) {
+        BaseResponse<?> response = workoutService.updateWorkoutHistory(appUser, request);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(
+                    ResponseUtil.SUCCESS,
+                    response.getMessage(),
+                    response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(
+                            ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE,
+                            response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(
+                            ResponseUtil.FAILED,
+                            response.getMessage(),
+                            response.getData()));
+        }
+    }
 
 }
