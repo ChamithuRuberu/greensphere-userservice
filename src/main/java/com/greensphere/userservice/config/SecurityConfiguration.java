@@ -33,10 +33,11 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(withDefaults()) // Apply CORS configuration
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/user/**").permitAll()
+                        .requestMatchers("/**").permitAll()
                         .requestMatchers("/transaction/**").hasAuthority("GOVERNMENT_USER")
                         .anyRequest().authenticated()
                 )
@@ -45,18 +46,16 @@ public class SecurityConfiguration {
                 .build();
     }
 
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                        .allowedOrigins("http://127.0.0.1:5500") // Adjust based on your frontend URL
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("Content-Type", "Authorization")
-                        .allowCredentials(true)
-                        .maxAge(3600);
-            }
-        };
+    @Configuration
+    public class WebConfig implements WebMvcConfigurer {
+        @Override
+        public void addCorsMappings(CorsRegistry registry) {
+            registry.addMapping("/**")
+                    .allowedOrigins("http://localhost:3000")
+                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowedHeaders("*")
+                    .allowCredentials(true)
+                    .maxAge(3600);
+        }
     }
 }

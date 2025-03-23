@@ -15,4 +15,5 @@ public class UserLoginResponse {
     private String refreshToken;
     @JsonProperty("user")
     private UserObj userObj;
+    private Object roles;
 }

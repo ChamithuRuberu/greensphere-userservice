@@ -13,6 +13,10 @@ public class ResponseUtil {
     public static final String INVALID_CREDENTIAL = "Invalid credentials.";
     public static final String USER_ALREADY_LOGGED_IN_ANOTHER_DEVICE = "User already logged in another device..";
 
+    //Gym Controller
+    public static final String GYM_REGISTERED = "Gym Registration Successfully.";
+    public static final String GYM_REGISTERED_FAILED = "Gym Registration Failed.";
+
 
 
 }

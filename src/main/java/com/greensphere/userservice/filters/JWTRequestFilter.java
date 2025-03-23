@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -107,6 +108,9 @@ public class JWTRequestFilter extends OncePerRequestFilter {
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 AppUser appUser = appUserRepository.findAppUserByUsername(username);
                 if (appUser != null) {
+
+                    request.setAttribute("user", appUser);
+                    MDC.put(MDC_UID_KEY, appUser.getUsername());
                 }
                 return usernamePasswordAuthenticationToken;
             }

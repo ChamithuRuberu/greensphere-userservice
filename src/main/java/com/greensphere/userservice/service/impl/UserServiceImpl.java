@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.*;
 import com.greensphere.userservice.constants.LogMessage;
+import com.greensphere.userservice.dto.request.UpdateUserDetailsRequest;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
@@ -13,20 +14,19 @@ import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestD
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.OtpVerifyResponse;
+import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
-import com.greensphere.userservice.entity.AppUser;
-import com.greensphere.userservice.entity.Parameter;
-import com.greensphere.userservice.entity.Role;
-import com.greensphere.userservice.entity.TokenBlackList;
+import com.greensphere.userservice.entity.*;
 import com.greensphere.userservice.enums.ResponseStatus;
 import com.greensphere.userservice.enums.Status;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.ParameterRepository;
 import com.greensphere.userservice.repository.TokenBlackListRepository;
+import com.greensphere.userservice.repository.TrainerRepository;
 import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.service.ApiConnector;
 import com.greensphere.userservice.service.AuthUserDetailsService;
@@ -45,10 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.greensphere.userservice.enums.Status.*;
 
@@ -65,6 +62,7 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final TokenBlackListRepository tokenBlackListRepository;
     private final AuthUserDetailsService authUserDetailsService;
+    private final TrainerRepository trainerRepository;
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -72,6 +70,13 @@ public class UserServiceImpl implements UserService {
     public void persistUser(AppUser appUser) {
         try {
             userRepository.save(appUser);
+        } catch (Exception e) {
+            log.error("persistUser-> Exception: {}", e.getMessage(), e);
+        }
+    }
+    public void persistTrainer(Trainer trainer) {
+        try {
+            trainerRepository.save(trainer);
         } catch (Exception e) {
             log.error("persistUser-> Exception: {}", e.getMessage(), e);
         }
@@ -113,7 +118,7 @@ public class UserServiceImpl implements UserService {
                 }
             } else {
                 // save app appUser in INITIALIZED status
-                if (registerInitRequest.getRoleType().equals("ROLE_GOVERNMENT_USER")) {
+                if (registerInitRequest.getRoleType().equals("ROLE_TRAINER")) {
                     appUser = AppUser.builder()
                             .mobile(mobile)
                             .email(email)
@@ -132,6 +137,7 @@ public class UserServiceImpl implements UserService {
                             .mobile(mobile)
                             .email(email)
                             .nic(nic)
+                            .govId(registerInitRequest.getGovId())
                             .build();
                     Role roleByName = roleService.getRoleByName(registerInitRequest.getRoleType());
                     Set<Role> objects = new HashSet<>();
@@ -142,6 +148,7 @@ public class UserServiceImpl implements UserService {
 
                 }
             }
+            appUser.setGovId(registerInitRequest.getGovId());
             Parameter otpLengthParameter = parameterRepository.findParameterByName(AppConstants.OTP_LENGTH);
             if (otpLengthParameter == null) {
                 log.warn("registerInit -> OTP_LENGTH parameter is missing from database");
@@ -169,9 +176,9 @@ public class UserServiceImpl implements UserService {
             persistUser(appUser);
 
             HashMap<String, Object> data = new HashMap<>();
-            data.put("app_user_id", appUser.getUsername());
+            data.put("username", appUser.getUsername());
             data.put("mobile", mobile);
-            data.put("gov_id", appUser.getGovId());
+            data.put("trainer_id", appUser.getGovId());
             data.put("user_role", appUser.getRoles());
 
             return BaseResponse.<HashMap<String, Object>>builder()
@@ -218,7 +225,7 @@ public class UserServiceImpl implements UserService {
             data.put("user_id", user.getUsername());
             data.put("user_status", user.getStatus());
             data.put("message", otpVerificationResponse.getMessage());
-            data.put("gov_id", user.getGovId());
+            data.put("trainer_id", user.getGovId());
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
                     .title(ResponseUtil.SUCCESS)
@@ -266,6 +273,17 @@ public class UserServiceImpl implements UserService {
                         .message("User doesn't have app user privileges")
                         .build();
             }
+
+            Trainer byTrainerId = trainerRepository.findByTrainerId(setUpDetailsRequest.getTrainerId());
+            if (byTrainerId == null) {
+                log.warn("saveUserCredentials -> Trainer doesn't have any trainers");
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.SUCCESS_CODE)
+                        .title(ResponseUtil.SUCCESS)
+                        .message("No Trainers Found ")
+                        .build();
+            }
+
             TokenRequest tokenRequest = TokenRequest.builder()
                     .username(user.getUsername())
                     .role(role.getName())
@@ -278,12 +296,14 @@ public class UserServiceImpl implements UserService {
             user.setAddressNo(setUpDetailsRequest.getAddressNo());
             user.setAddressStreet(setUpDetailsRequest.getAddressStreet());
             user.setCity(setUpDetailsRequest.getCity());
-            user.setStatus(SAVED.name());
+            user.setStatus(ACTIVE.name());
             user.setDob(setUpDetailsRequest.getBirthOfDate());
             user.setPassword(setUpDetailsRequest.getPassword());
             user.setPostalCode(setUpDetailsRequest.getPostalCode());
             user.setRegisteredAt(LocalDateTime.now());
             user.setRegisteredAt(LocalDateTime.now());
+            user.setGovId(Long.valueOf(setUpDetailsRequest.getTrainerId()));
+            user.setRoleType("ROLE_USER");
             persistUser(user);
             log.info("setUpDetails-> User password setup details");
 
@@ -298,6 +318,7 @@ public class UserServiceImpl implements UserService {
             HashMap<String, Object> data = new HashMap<>();
             data.put("token", token);
             data.put("refresh_token", refreshToken);
+            data.put("trainer_obj", byTrainerId);
             data.put("user", userObj);
 
             log.info("saveUserCredentials -> User password saved");
@@ -422,7 +443,7 @@ public class UserServiceImpl implements UserService {
                         .message("User doesn't have any roles")
                         .build();
             }
-            Role role = roles.stream().filter(r -> r.getName().equals("ROLE_GOVERNMENT_USER")).findAny().orElse(null);
+            Role role = roles.stream().filter(r -> r.getName().equals("ROLE_TRAINER")).findAny().orElse(null);
             if (role == null) {
                 log.warn("saveUserCredentials -> User doesn't have APP_USER privileges");
                 return BaseResponse.<HashMap<String, Object>>builder()
@@ -440,25 +461,65 @@ public class UserServiceImpl implements UserService {
 
             String token = jwtUtil.createJwtToken(tokenRequest);
             String refreshToken = jwtUtil.createRefreshToken(tokenRequest);
-            user.setStatus(SAVED.name());
+
+            user.setStatus(ACTIVE.name());
             user.setRegisteredAt(LocalDateTime.now());
             user.setPassword(govUserRegisterRequest.getPassword());
             user.setCity(govUserRegisterRequest.getCity());
             user.setFullName(govUserRegisterRequest.getName());
+            user.setRoleType("ROLE_TRAINER");
             persistUser(user);
+
+            Trainer isExist = trainerRepository.findByTrainerId(String.valueOf(govUserRegisterRequest.getTrainerId()));
+            HashMap<String, Object> data = new HashMap<>();
+
+            if (ObjectUtils.isEmpty(isExist)) { // If no record exists, create new trainer
+                Trainer trainer = new Trainer();
+                trainer.setName(user.getFullName());
+                trainer.setTrainerId(String.valueOf(user.getGovId()));
+                trainer.setWeight(govUserRegisterRequest.getWeight());
+                trainer.setServicePeriod(govUserRegisterRequest.getServicePeriod());
+                trainer.setProfile(govUserRegisterRequest.getProfile());
+                trainer.setHeight(govUserRegisterRequest.getHeight());
+                trainer.setEmail(user.getEmail());
+                trainer.setMobile(user.getMobile());
+                trainer.setLocation(user.getCity());
+                trainer.setRating("100%");
+
+                persistTrainer(trainer);
+                log.info("trainerSignUp -> Trainer has been saved");
+
+                data.put("trainer_obj", trainer); // Store created trainer
+            } else {
+                isExist.setTrainerId(String.valueOf(user.getGovId()));
+                isExist.setName(user.getFullName());
+                isExist.setHeight(govUserRegisterRequest.getHeight());
+                isExist.setWeight(govUserRegisterRequest.getWeight());
+                isExist.setServicePeriod(govUserRegisterRequest.getServicePeriod());
+                isExist.setProfile(govUserRegisterRequest.getProfile());
+                isExist.setRating("100%");
+                isExist.setEmail(user.getEmail());
+                isExist.setMobile(user.getMobile());
+                isExist.setLocation(user.getCity());
+
+                persistTrainer(isExist);
+
+                data.put("trainer_obj", isExist); // Store updated trainer
+            }
+
 
             HashMap<String, Object> userObj = new HashMap<>();
             userObj.put("full_name", user.getFullName());
             userObj.put("status", user.getStatus());
             userObj.put("city", user.getCity());
             userObj.put("email", user.getEmail());
-            userObj.put("user_id", user.getGovId());
+            userObj.put("trainer_id", user.getGovId());
 
 
-            HashMap<String, Object> data = new HashMap<>();
             data.put("token", token);
             data.put("refresh_token", refreshToken);
             data.put("user", userObj);
+            data.put("trainer_obj",isExist);
 
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
@@ -576,13 +637,16 @@ public class UserServiceImpl implements UserService {
         }
 
         TokenRequest tokenRequest = TokenRequest.builder()
-                .role(loginRequest.getRoleType())
-                .username(loginUser.getUsername())
+                .role(loginUser.getRoles().stream()
+                        .findFirst() // Get the first role available
+                        .map(Role::getName) // Extract the role name
+                        .orElseThrow(() -> new RuntimeException("No roles found for the user")))                 .username(loginUser.getUsername())
                 .now(LocalDateTime.now())
                 .build();
 
         String token = jwtUtil.createJwtToken(tokenRequest);
         String refreshToken = jwtUtil.createRefreshToken(tokenRequest);
+
 
         UserLoginResponse data = UserLoginResponse.builder()
                 .token(token)
@@ -595,6 +659,7 @@ public class UserServiceImpl implements UserService {
                         .status(loginUser.getStatus())
                         .mobile(loginUser.getMobile())
                         .build())
+                .roles(loginUser.getRoles())
                 .build();
 
         return BaseResponse.<UserLoginResponse>builder()
@@ -702,6 +767,7 @@ public class UserServiceImpl implements UserService {
 
                     userAuthResponse = UserAuthResponse.builder()
                             .appUser(userResponse)
+                            .userDetails(userDetails)
                             .build();
 
                     return BaseResponse.<UserAuthResponse>builder()
@@ -762,6 +828,40 @@ public class UserServiceImpl implements UserService {
                 .title(ResponseStatus.FAILED.name())
                 .message("Failed User Authenticated.")
                 .build();
+    }
+
+    @Override
+    public BaseResponse<UpdateUserDetailsResponse> updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest, AppUser appUser) {
+
+        String email = updateUserDetailsRequest.getEmail();
+        String mobile = updateUserDetailsRequest.getMobile();
+        boolean isExist = userRepository.existsByEmailAndAndMobile(email, mobile);
+
+        if (isExist) {
+            return BaseResponse.<UpdateUserDetailsResponse>builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseStatus.FAILED.name())
+                    .message("Inputs are already exist")
+                    .build();
+        }
+        AppUser appUserByUsername = userRepository.findAppUserByUsername(appUser.getUsername());
+        appUserByUsername.setEmail(email);
+        appUserByUsername.setMobile(mobile);
+        appUserByUsername.setFullName(updateUserDetailsRequest.getFullname());
+        userRepository.save(appUserByUsername);
+
+        UpdateUserDetailsResponse updateUserDetailsResponse = new UpdateUserDetailsResponse();
+        updateUserDetailsResponse.setEmail(email);
+        updateUserDetailsResponse.setMobile(mobile);
+        updateUserDetailsResponse.setFullName(appUser.getFullName());
+
+        return BaseResponse.<UpdateUserDetailsResponse>builder()
+                .code(ResponseCodeUtil.FAILED_CODE)
+                .title(ResponseStatus.FAILED.name())
+                .message("Inputs are already exist")
+                .data(updateUserDetailsResponse)
+                .build();
+
     }
 
 }

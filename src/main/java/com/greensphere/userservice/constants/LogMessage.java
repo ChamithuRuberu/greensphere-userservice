@@ -13,11 +13,11 @@ public class LogMessage {
     public static final String SEND_OTP = "sendOtp -> {}";
     public static final String FORGOT_OTP = "forgotOtp -> {}";
 
-    public static final String OTP_ATTEMPTS_BALANCE = "Otp Attempts remaining -> {}";
-    public static final String FOREIGN_NUMBER = "foreign number -> {}";
-    public static final String REQUEST = "Request -> {}";
-    public static final String RESPONSE = "Response -> {}";
-    public static final String URL = "Url -> {}";
+//    public static final String OTP_ATTEMPTS_BALANCE = "Otp Attempts remaining -> {}";
+//    public static final String FOREIGN_NUMBER = "foreign number -> {}";
+//    public static final String REQUEST = "Request -> {}";
+//    public static final String RESPONSE = "Response -> {}";
+//    public static final String URL = "Url -> {}";
 
 
     public static final String REGISTER = "Register  -> {}";

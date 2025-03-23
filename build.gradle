@@ -38,6 +38,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     implementation 'com.auth0:java-jwt:4.4.0'
+    implementation 'mysql:mysql-connector-java:8.0.33'
+    implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    implementation 'mysql:mysql-connector-java'
 }
 
 tasks.named('test') {

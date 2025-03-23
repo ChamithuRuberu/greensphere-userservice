@@ -14,10 +14,6 @@ public class SetUpDetailsRequest {
     @NotEmpty(message = AppConstants.USER_ID_REQUIRED)
     private String username;
 
-    @NotEmpty(message = "name shouldn't be empty")
-    @Pattern(regexp = "^(?![ .]+$)[a-zA-Z .]*$", message = "Please enter a valid name")
-    private String name;
-
     private String profile;
 
     @JsonProperty("full_name")
@@ -47,4 +43,10 @@ public class SetUpDetailsRequest {
 
     @JsonProperty("role_type")
     private String roleType;
+
+    private String servicePeriod;
+    private String weight;
+    private String height;
+    private String injuries;
+    private String trainerId;
 }
