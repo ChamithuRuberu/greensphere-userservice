@@ -298,7 +298,7 @@ public class UserServiceImpl implements UserService {
             user.setCity(setUpDetailsRequest.getCity());
             user.setStatus(ACTIVE.name());
             user.setDob(setUpDetailsRequest.getBirthOfDate());
-            user.setPassword(setUpDetailsRequest.getPassword());
+            user.setEncryptedPassword(setUpDetailsRequest.getPassword());
             user.setPostalCode(setUpDetailsRequest.getPostalCode());
             user.setRegisteredAt(LocalDateTime.now());
             user.setRegisteredAt(LocalDateTime.now());
@@ -464,7 +464,7 @@ public class UserServiceImpl implements UserService {
 
             user.setStatus(ACTIVE.name());
             user.setRegisteredAt(LocalDateTime.now());
-            user.setPassword(govUserRegisterRequest.getPassword());
+            user.setEncryptedPassword(govUserRegisterRequest.getPassword());
             user.setCity(govUserRegisterRequest.getCity());
             user.setFullName(govUserRegisterRequest.getName());
             user.setRoleType("ROLE_TRAINER");

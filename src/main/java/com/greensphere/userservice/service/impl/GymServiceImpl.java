@@ -1,7 +1,6 @@
 package com.greensphere.userservice.service.impl;
 
 import com.greensphere.userservice.dto.request.GymServiceRequest.GymRegisterRequest;
-import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.Gym;
@@ -9,7 +8,6 @@ import com.greensphere.userservice.entity.Role;
 import com.greensphere.userservice.repository.GymRepository;
 import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.service.GymService;
-import com.greensphere.userservice.service.UserService;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +34,7 @@ public class GymServiceImpl implements GymService {
             AppUser appUser = new AppUser();
             appUser.setEmail(gymRegisterRequest.getEmail());
             appUser.setStatus("ACTIVE");
-            appUser.setPassword(gymRegisterRequest.getPassword());
+            appUser.setEncryptedPassword(gymRegisterRequest.getPassword());
             Role roleByName = roleService.getRoleByName("ROLE_GYM");
             Set<Role> objects = new HashSet<>();
             objects.add(roleByName);

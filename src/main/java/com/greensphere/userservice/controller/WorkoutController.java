@@ -51,9 +51,7 @@ public class WorkoutController {
     }
 
     @PostMapping("/update-workout-history")
-    public ResponseEntity<DefaultResponse> updateWorkoutHistory(
-            @RequestAttribute("user") AppUser appUser,
-            @RequestBody UpdateWorkoutHistoryRequest request) {
+    public ResponseEntity<DefaultResponse> updateWorkoutHistory(@RequestAttribute("user") AppUser appUser, @RequestBody UpdateWorkoutHistoryRequest request) {
         BaseResponse<?> response = workoutService.updateWorkoutHistory(appUser, request);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(
@@ -66,8 +64,7 @@ public class WorkoutController {
                             ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE,
                             response.getMessage()));
         } else {
-            return ResponseEntity.badRequest()
-                    .body(DefaultResponse.error(
+            return ResponseEntity.badRequest().body(DefaultResponse.error(
                             ResponseUtil.FAILED,
                             response.getMessage(),
                             response.getData()));

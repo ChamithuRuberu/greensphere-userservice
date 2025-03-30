@@ -66,7 +66,7 @@ public class AppUser extends BaseEntity {
     @Transient
     private Collection<GrantedAuthority> grantedAuthoritiesList = new ArrayList<>();
 
-    public void setPassword(String password) {
+    public void setEncryptedPassword(String password) {
         this.password = new BCryptPasswordEncoder().encode(password);
     }
 
