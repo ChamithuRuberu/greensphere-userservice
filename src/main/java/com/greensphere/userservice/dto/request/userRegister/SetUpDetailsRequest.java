@@ -49,4 +49,5 @@ public class SetUpDetailsRequest {
     private String height;
     private String injuries;
     private String trainerId;
+    private Long gymId;
 }

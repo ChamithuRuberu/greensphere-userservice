@@ -52,6 +52,7 @@ public class GymServiceImpl implements GymService {
                     gym.setMembership(gymRegisterRequest.getMembership());
                     gym.setPhone(gymRegisterRequest.getPhone());
                     gym.setGymName(gymRegisterRequest.getGymName());
+                    gym.setAdminId(gymRegisterRequest.getAdminId());
                     gymRepository.save(gym);
                 }
             } else {

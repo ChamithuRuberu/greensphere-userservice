@@ -13,5 +13,7 @@ public class GymRegisterRequest {
     private String phone;
     private String monthlyFee;
     private String membership;
+    private int month;
     private String password;
+    private Long adminId;
 }

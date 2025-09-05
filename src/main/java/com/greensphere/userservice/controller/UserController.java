@@ -1,8 +1,7 @@
 package com.greensphere.userservice.controller;
 
-import com.greensphere.userservice.dto.request.TokenValidationRequest;
+import com.greensphere.userservice.dto.request.*;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
-import com.greensphere.userservice.dto.request.UpdateUserDetailsRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
 import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
@@ -49,7 +48,7 @@ public class UserController {
     }
 
     @PostMapping(value = "/register-verify")
-    public ResponseEntity<DefaultResponse> registerVerify( @RequestBody UserRegisterVerifyRequest userRegisterVerifyRequest) {
+    public ResponseEntity<DefaultResponse> registerVerify(@RequestBody UserRegisterVerifyRequest userRegisterVerifyRequest) {
         BaseResponse<HashMap<String, Object>> response = userService.registerVerify(userRegisterVerifyRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
@@ -79,7 +78,7 @@ public class UserController {
 
     @PostMapping(path = "/gov-user/register")
 //    @PreAuthorize("hasAuthority('GOVERNMENT_USER')")
-    public ResponseEntity<DefaultResponse>govUserRegister(@Valid @RequestBody GovUserRegisterRequest govUserRegisterRequest){
+    public ResponseEntity<DefaultResponse> govUserRegister(@Valid @RequestBody GovUserRegisterRequest govUserRegisterRequest) {
         BaseResponse<HashMap<String, Object>> response = userService.govUserSignUp(govUserRegisterRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
@@ -93,7 +92,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/login")
-    public ResponseEntity<DefaultResponse>login(@Valid @RequestBody UserLoginRequest loginRequest){
+    public ResponseEntity<DefaultResponse> login(@Valid @RequestBody UserLoginRequest loginRequest) {
         BaseResponse<UserLoginResponse> response = userService.login(loginRequest);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
@@ -151,5 +150,49 @@ public class UserController {
                     .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage()));
         }
     }
+
+
+    @PostMapping(path = "/trainer-activate")
+    public ResponseEntity<DefaultResponse> trainerActivate(@Valid @RequestBody TrainerActivateRequest request) {
+        BaseResponse<HashMap<String, Object>> response = userService.activateUser(request);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+    @PostMapping(path = "/gym-activate")
+    public ResponseEntity<DefaultResponse> gymActivate(@Valid @RequestBody UserActivateByGymRequest request) {
+        BaseResponse<HashMap<String, Object>> response = userService.activateUserByGym(request);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+    @PostMapping(path = "/admin-activate")
+    public ResponseEntity<DefaultResponse> adminActivate(@Valid @RequestBody GymActivateByAdminRequest request) {
+        BaseResponse<HashMap<String, Object>> response = userService.activateGymByAdmin(request);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
 
 }

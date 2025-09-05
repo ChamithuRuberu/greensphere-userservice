@@ -4,7 +4,10 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.*;
 import com.greensphere.userservice.constants.LogMessage;
+import com.greensphere.userservice.dto.request.GymActivateByAdminRequest;
+import com.greensphere.userservice.dto.request.TrainerActivateRequest;
 import com.greensphere.userservice.dto.request.UpdateUserDetailsRequest;
+import com.greensphere.userservice.dto.request.UserActivateByGymRequest;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
@@ -24,10 +27,7 @@ import com.greensphere.userservice.entity.*;
 import com.greensphere.userservice.enums.ResponseStatus;
 import com.greensphere.userservice.enums.Status;
 import com.greensphere.userservice.exceptions.MissingParameterException;
-import com.greensphere.userservice.repository.ParameterRepository;
-import com.greensphere.userservice.repository.TokenBlackListRepository;
-import com.greensphere.userservice.repository.TrainerRepository;
-import com.greensphere.userservice.repository.UserRepository;
+import com.greensphere.userservice.repository.*;
 import com.greensphere.userservice.service.ApiConnector;
 import com.greensphere.userservice.service.AuthUserDetailsService;
 import com.greensphere.userservice.service.UserService;
@@ -44,6 +44,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -63,6 +64,10 @@ public class UserServiceImpl implements UserService {
     private final TokenBlackListRepository tokenBlackListRepository;
     private final AuthUserDetailsService authUserDetailsService;
     private final TrainerRepository trainerRepository;
+    private final GymRepository gymRepository;
+    private final TrainerIncomeRepository trainerIncomeRepository;
+    private final GymIncomeRepository gymIncomeRepository;
+    private final AdminIncomeRepository adminIncomeRepository;
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -284,6 +289,16 @@ public class UserServiceImpl implements UserService {
                         .build();
             }
 
+            Gym gymById = gymRepository.findGymById(setUpDetailsRequest.getGymId());
+            if (gymById == null) {
+                log.warn("saveUserCredentials -> gym doesn't have any trainers");
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.SUCCESS_CODE)
+                        .title(ResponseUtil.SUCCESS)
+                        .message("No Gym Found ")
+                        .build();
+            }
+
             TokenRequest tokenRequest = TokenRequest.builder()
                     .username(user.getUsername())
                     .role(role.getName())
@@ -296,13 +311,17 @@ public class UserServiceImpl implements UserService {
             user.setAddressNo(setUpDetailsRequest.getAddressNo());
             user.setAddressStreet(setUpDetailsRequest.getAddressStreet());
             user.setCity(setUpDetailsRequest.getCity());
-            user.setStatus(ACTIVE.name());
+            user.setStatus(PENDING.name());
             user.setDob(setUpDetailsRequest.getBirthOfDate());
             user.setEncryptedPassword(setUpDetailsRequest.getPassword());
             user.setPostalCode(setUpDetailsRequest.getPostalCode());
             user.setRegisteredAt(LocalDateTime.now());
             user.setRegisteredAt(LocalDateTime.now());
+            user.setWeight(setUpDetailsRequest.getWeight());
+            user.setHeight(setUpDetailsRequest.getHeight());
+            user.setInjuries(setUpDetailsRequest.getInjuries());
             user.setGovId(Long.valueOf(setUpDetailsRequest.getTrainerId()));
+            user.setGymId(gymById.getId());
             user.setRoleType("ROLE_USER");
             persistUser(user);
             log.info("setUpDetails-> User password setup details");
@@ -467,6 +486,7 @@ public class UserServiceImpl implements UserService {
             user.setEncryptedPassword(govUserRegisterRequest.getPassword());
             user.setCity(govUserRegisterRequest.getCity());
             user.setFullName(govUserRegisterRequest.getName());
+            user.setGymId(govUserRegisterRequest.getGymId());
             user.setRoleType("ROLE_TRAINER");
             persistUser(user);
 
@@ -514,6 +534,7 @@ public class UserServiceImpl implements UserService {
             userObj.put("city", user.getCity());
             userObj.put("email", user.getEmail());
             userObj.put("trainer_id", user.getGovId());
+            userObj.put("gym_id", user.getGymId());
 
 
             data.put("token", token);
@@ -560,6 +581,165 @@ public class UserServiceImpl implements UserService {
                     .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
                     .title(ResponseUtil.INTERNAL_SERVER_ERROR)
                     .message("Error occurred while user login")
+                    .build();
+        }
+    }
+    public BaseResponse<HashMap<String, Object>> activateUser(TrainerActivateRequest request) {
+        try {
+            AppUser loginUser = userRepository.findAppUserByEmail(request.getEmail());
+
+            if (loginUser == null) {
+                log.warn("There is No user Found -> {}", request.getEmail());
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("App User Not Found")
+                        .build();
+            }
+
+           Trainer trainer = trainerRepository.findByTrainerId(String.valueOf(loginUser.getGovId()));
+
+            if (trainer == null) {
+                log.warn("There is No trainer Found -> {}", loginUser.getGovId());
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("trainer Not Found")
+                        .build();
+            }
+
+            TrainerIncome trainerIncome = new TrainerIncome();
+            trainerIncome.setTrainerId(loginUser.getGovId());
+            trainerIncome.setMonth(1);
+            trainerIncome.setLastPaymentDate(LocalDate.now());
+            trainerIncome.setNextPaymentDate(LocalDate.now().plusMonths(1));
+            trainerIncome.setUserEmail(loginUser.getEmail());
+            trainerIncome.setAmount(request.getAmount());
+            trainerIncomeRepository.save(trainerIncome);
+
+            loginUser.setStatus(ACTIVE.name());
+            userRepository.save(loginUser);
+
+            log.info("activateUser -> activated");
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("User Activate Successfully")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("activateUser -> Exception : {}", e.getMessage(), e);
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseUtil.INTERNAL_SERVER_ERROR)
+                    .message("Error occurred while user activate")
+                    .build();
+        }
+    }
+
+    public BaseResponse<HashMap<String, Object>> activateUserByGym(UserActivateByGymRequest request) {
+        try {
+            AppUser loginUser = userRepository.findAppUserByEmail(request.getEmail());
+
+            if (loginUser == null) {
+                log.warn("There is No user Found -> {}", request.getEmail());
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("App User Not Found")
+                        .build();
+            }
+
+            Gym gym = gymRepository.findGymById(loginUser.getGymId());
+
+            if (gym == null) {
+                log.warn("There is No gym Found -> {}", loginUser.getGovId());
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("Gym Not Found")
+                        .build();
+            }
+
+            GymIncome gymIncome = new GymIncome();
+            gymIncome.setGymId(loginUser.getGymId());
+            gymIncome.setMonth(1);
+            gymIncome.setLastPaymentDate(LocalDate.now());
+            gymIncome.setNextPaymentDate(LocalDate.now().plusMonths(1));
+            gymIncome.setUserEmail(loginUser.getEmail());
+            gymIncome.setAmount(request.getAmount());
+            gymIncomeRepository.save(gymIncome);
+
+            loginUser.setStatus(ACTIVE.name());
+            userRepository.save(loginUser);
+
+            log.info("activateUser -> activated");
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("User Activate Successfully")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("activateUser -> Exception : {}", e.getMessage(), e);
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseUtil.INTERNAL_SERVER_ERROR)
+                    .message("Error occurred while user activate")
+                    .build();
+        }
+    }
+
+    public BaseResponse<HashMap<String, Object>> activateGymByAdmin(GymActivateByAdminRequest request) {
+        try {
+            AppUser loginUser = userRepository.findAppUserByEmail(request.getEmail());
+
+            if (loginUser == null) {
+                log.warn("There is No user Found -> {}", request.getEmail());
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("App User Not Found")
+                        .build();
+            }
+
+            Gym gym = gymRepository.findGymById(loginUser.getGymId());
+
+            if (gym == null) {
+                log.warn("There is No gym Found -> {}", loginUser.getGovId());
+                return BaseResponse.<HashMap<String, Object>>builder()
+                        .code(ResponseCodeUtil.FAILED_CODE)
+                        .title(ResponseUtil.FAILED)
+                        .message("Gym Not Found")
+                        .build();
+            }
+
+            AdminIncome adminIncome = new AdminIncome();
+            adminIncome.setGymId(loginUser.getGymId());
+            adminIncome.setAdminId(gym.getAdminId());
+            adminIncome.setMonth(1);
+            adminIncome.setLastPaymentDate(LocalDate.now());
+            adminIncome.setNextPaymentDate(LocalDate.now().plusMonths(1));
+            adminIncome.setUserEmail(loginUser.getEmail());
+            adminIncome.setAmount(request.getAmount());
+            adminIncomeRepository.save(adminIncome);
+
+            loginUser.setStatus(ACTIVE.name());
+            userRepository.save(loginUser);
+
+            log.info("activateUser -> activated");
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("User Activate Successfully")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("activateUser -> Exception : {}", e.getMessage(), e);
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseUtil.INTERNAL_SERVER_ERROR)
+                    .message("Error occurred while user activate")
                     .build();
         }
     }
