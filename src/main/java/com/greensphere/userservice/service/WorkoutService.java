@@ -10,7 +10,6 @@ import com.greensphere.userservice.entity.AppUser;
 public interface WorkoutService {
     BaseResponse<GetAllWorkoutsResponse> getWorkoutsByUsername(AppUser appUser, GetWorkoutsRequest request);
 
-
     BaseResponse<GetAllWorkoutsResponse> createWorkout(AppUser appUser, CreateWorkoutRequest request);
 
     BaseResponse<?> updateWorkoutHistory(AppUser appUser, UpdateWorkoutHistoryRequest request);
