@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -15,10 +17,12 @@ public class AdminIncome {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "admin_income_sequence")
     @SequenceGenerator(name = "admin_income_sequence", sequenceName = "admin_income_sequence", allocationSize = 1)
     private Long id;
-    private String adminId;
-    private String gymId;
-    private String month;
-    private String year;
+    private Long adminId;
+    private Long gymId;
+    private String userEmail;
+    private int month;
+    private LocalDate lastPaymentDate;
+    private LocalDate nextPaymentDate;
     private BigDecimal amount;
 
 }

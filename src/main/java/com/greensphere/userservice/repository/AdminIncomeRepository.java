@@ -1,12 +1,10 @@
 package com.greensphere.userservice.repository;
 
-import com.greensphere.userservice.entity.Gym;
+import com.greensphere.userservice.entity.AdminIncome;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface GymRepository extends JpaRepository<Gym,Long> {
+public interface AdminIncomeRepository extends JpaRepository<AdminIncome, Long> {
 
-    Gym findGymByEmail(String id);
-    Gym findGymById(Long id);
 }

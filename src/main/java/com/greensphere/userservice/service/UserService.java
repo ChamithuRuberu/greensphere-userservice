@@ -1,6 +1,9 @@
 package com.greensphere.userservice.service;
 
+import com.greensphere.userservice.dto.request.GymActivateByAdminRequest;
+import com.greensphere.userservice.dto.request.TrainerActivateRequest;
 import com.greensphere.userservice.dto.request.UpdateUserDetailsRequest;
+import com.greensphere.userservice.dto.request.UserActivateByGymRequest;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
@@ -26,6 +29,10 @@ public interface UserService {
     BaseResponse<HashMap<String, Object>> govUserSignUp(GovUserRegisterRequest govUserRegisterRequest);
 
     BaseResponse<UserLoginResponse> login(UserLoginRequest loginRequest);
+
+    BaseResponse<HashMap<String, Object>> activateUser(TrainerActivateRequest request);
+    BaseResponse<HashMap<String, Object>> activateUserByGym(UserActivateByGymRequest request);
+    BaseResponse<HashMap<String, Object>> activateGymByAdmin(GymActivateByAdminRequest request);
 
     BaseResponse<?> logOut(LogOutRequest logOutRequest);
 
