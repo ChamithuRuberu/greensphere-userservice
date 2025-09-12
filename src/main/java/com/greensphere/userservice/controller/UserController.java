@@ -151,7 +151,7 @@ public class UserController {
         }
     }
 
-
+//trainer
     @PostMapping(path = "/trainer-activate")
     public ResponseEntity<DefaultResponse> trainerActivate(@Valid @RequestBody TrainerActivateRequest request) {
         BaseResponse<HashMap<String, Object>> response = userService.activateUser(request);
@@ -166,6 +166,7 @@ public class UserController {
         }
     }
 
+    //gym
     @PostMapping(path = "/gym-activate")
     public ResponseEntity<DefaultResponse> gymActivate(@Valid @RequestBody UserActivateByGymRequest request) {
         BaseResponse<HashMap<String, Object>> response = userService.activateUserByGym(request);
@@ -180,6 +181,7 @@ public class UserController {
         }
     }
 
+    //admin
     @PostMapping(path = "/admin-activate")
     public ResponseEntity<DefaultResponse> adminActivate(@Valid @RequestBody GymActivateByAdminRequest request) {
         BaseResponse<HashMap<String, Object>> response = userService.activateGymByAdmin(request);

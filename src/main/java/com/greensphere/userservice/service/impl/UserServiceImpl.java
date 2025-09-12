@@ -79,6 +79,7 @@ public class UserServiceImpl implements UserService {
             log.error("persistUser-> Exception: {}", e.getMessage(), e);
         }
     }
+
     public void persistTrainer(Trainer trainer) {
         try {
             trainerRepository.save(trainer);
@@ -289,15 +290,12 @@ public class UserServiceImpl implements UserService {
                         .build();
             }
 
-            Gym gymById = gymRepository.findGymById(setUpDetailsRequest.getGymId());
-            if (gymById == null) {
-                log.warn("saveUserCredentials -> gym doesn't have any trainers");
-                return BaseResponse.<HashMap<String, Object>>builder()
-                        .code(ResponseCodeUtil.SUCCESS_CODE)
-                        .title(ResponseUtil.SUCCESS)
-                        .message("No Gym Found ")
-                        .build();
+            Gym gymById = null;
+
+            if (!ObjectUtils.isEmpty(setUpDetailsRequest.getGymId())) {
+                gymById = gymRepository.findGymById(setUpDetailsRequest.getGymId());
             }
+            Long gymId = (gymById != null && gymById.getId() != null) ? gymById.getId() : 0L;
 
             TokenRequest tokenRequest = TokenRequest.builder()
                     .username(user.getUsername())
@@ -321,7 +319,7 @@ public class UserServiceImpl implements UserService {
             user.setHeight(setUpDetailsRequest.getHeight());
             user.setInjuries(setUpDetailsRequest.getInjuries());
             user.setGovId(Long.valueOf(setUpDetailsRequest.getTrainerId()));
-            user.setGymId(gymById.getId());
+            user.setGymId(gymId);
             user.setRoleType("ROLE_USER");
             persistUser(user);
             log.info("setUpDetails-> User password setup details");
@@ -540,7 +538,7 @@ public class UserServiceImpl implements UserService {
             data.put("token", token);
             data.put("refresh_token", refreshToken);
             data.put("user", userObj);
-            data.put("trainer_obj",isExist);
+            data.put("trainer_obj", isExist);
 
             return BaseResponse.<HashMap<String, Object>>builder()
                     .code(ResponseCodeUtil.SUCCESS_CODE)
@@ -584,6 +582,7 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
     }
+
     public BaseResponse<HashMap<String, Object>> activateUser(TrainerActivateRequest request) {
         try {
             AppUser loginUser = userRepository.findAppUserByEmail(request.getEmail());
@@ -597,7 +596,7 @@ public class UserServiceImpl implements UserService {
                         .build();
             }
 
-           Trainer trainer = trainerRepository.findByTrainerId(String.valueOf(loginUser.getGovId()));
+            Trainer trainer = trainerRepository.findByTrainerId(String.valueOf(loginUser.getGovId()));
 
             if (trainer == null) {
                 log.warn("There is No trainer Found -> {}", loginUser.getGovId());
@@ -820,7 +819,7 @@ public class UserServiceImpl implements UserService {
                 .role(loginUser.getRoles().stream()
                         .findFirst() // Get the first role available
                         .map(Role::getName) // Extract the role name
-                        .orElseThrow(() -> new RuntimeException("No roles found for the user")))                 .username(loginUser.getUsername())
+                        .orElseThrow(() -> new RuntimeException("No roles found for the user"))).username(loginUser.getUsername())
                 .now(LocalDateTime.now())
                 .build();
 
@@ -923,7 +922,7 @@ public class UserServiceImpl implements UserService {
                                 .build();
                     }
 
-                    if (!Status.ACTIVE.name().equals(user.getStatus())) {
+                    if (!ACTIVE.name().equals(user.getStatus())) {
                         log.warn(LogMessage.USER_DISABLED);
                         return BaseResponse.<UserAuthResponse>builder()
                                 .code(ResponseCodeUtil.DISABLE_USER_ERROR_CODE)
