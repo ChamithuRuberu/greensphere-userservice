@@ -211,6 +211,17 @@ public class UserController {
         return ResponseEntity.ok(userService.saveIncome(income));
     }
 
+    @PutMapping("/{id}/disable")
+    public ResponseEntity<String> disableUser(@PathVariable Long id) {
+        userService.disableUser(id);
+        return ResponseEntity.ok("User " + id + " disabled successfully.");
+    }
+
+    @PutMapping("/{id}/enable")
+    public ResponseEntity<String> enableUser(@PathVariable Long id) {
+        userService.enableUser(id);
+        return ResponseEntity.ok("User " + id + " enabled successfully.");
+    }
 
     // Upcoming for all trainers (admin)
     @GetMapping("/upcoming")

@@ -25,7 +25,6 @@ import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginRespo
 import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
 import com.greensphere.userservice.entity.*;
 import com.greensphere.userservice.enums.ResponseStatus;
-import com.greensphere.userservice.enums.Status;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.*;
 import com.greensphere.userservice.service.ApiConnector;
@@ -46,7 +45,10 @@ import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.greensphere.userservice.enums.Status.*;
 
@@ -1093,5 +1095,19 @@ public class UserServiceImpl implements UserService {
         }
         existing.setNextPaymentDate(existing.getLastPaymentDate().plusMonths(existing.getMonth()));
         return trainerIncomeRepository.save(existing);
+    }
+
+    public void disableUser(Long userId) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus("DISABLED");   // update existing status field
+        userRepository.save(user);
+    }
+
+    public void enableUser(Long userId) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus("ACTIVE");     // reset status
+        userRepository.save(user);
     }
 }
