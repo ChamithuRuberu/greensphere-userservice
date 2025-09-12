@@ -15,9 +15,12 @@ import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.entity.AppUser;
+import com.greensphere.userservice.entity.TrainerIncome;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 
 public interface UserService {
     BaseResponse<HashMap<String, Object>> registerInit(UserRegisterRequestDto registerInitRequest);
@@ -40,4 +43,35 @@ public interface UserService {
 
     BaseResponse<UpdateUserDetailsResponse> updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest, AppUser appUser);
 
-}
+    // Trainer Income Management
+    TrainerIncome saveIncome(TrainerIncome income);
+
+    /**
+     * Upcoming payments for a specific trainer (nextPaymentDate > today).
+     */
+    List<TrainerIncome> getUpcomingPaymentsByTrainer(Long trainerId);
+
+    /**
+     * Upcoming payments across all trainers (nextPaymentDate > today).
+     */
+    List<TrainerIncome> getAllUpcomingPayments();
+
+    /**
+     * Payments due soon for a specific trainer within the next N days (inclusive).
+     * @param trainerId trainer id
+     * @param days number of days from today (e.g., 7)
+     */
+    List<TrainerIncome> getDueSoonByTrainer(Long trainerId, int days);
+
+    /**
+     * Payments due soon across all trainers within the next N days (inclusive).
+     * @param days number of days from today (e.g., 7)
+     */
+    List<TrainerIncome> getAllDueSoon(int days);
+
+    /**
+     * Renew a payment cycle:
+     * - Sets lastPaymentDate = today
+     * - Recomputes nextPaymentDate = lastPaymentDate + month(s)
+     */
+    TrainerIncome renewPayment(Long incomeId);}

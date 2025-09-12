@@ -13,6 +13,7 @@ import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.entity.AppUser;
+import com.greensphere.userservice.entity.TrainerIncome;
 import com.greensphere.userservice.service.UserService;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
@@ -24,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -196,5 +198,56 @@ public class UserController {
         }
     }
 
+    // GET: upcoming payments for a specific trainer
+    @GetMapping("/upcoming/{trainerId}")
+    public ResponseEntity<List<TrainerIncome>> getUpcomingPayments(@PathVariable Long trainerId) {
+        List<TrainerIncome> upcoming = userService.getUpcomingPaymentsByTrainer(trainerId);
+        return ResponseEntity.ok(upcoming);
+    }
+
+    // GET: all upcoming payments (admin-level)
+    @GetMapping("/upcoming")
+    public ResponseEntity<List<TrainerIncome>> getAllUpcomingPayments() {
+        List<TrainerIncome> upcoming = userService.getAllUpcomingPayments();
+        return ResponseEntity.ok(upcoming);
+    }
+
+    // Create/save a payment record (auto-calculates nextPaymentDate)
+    @PostMapping("/save")
+    public ResponseEntity<TrainerIncome> saveIncome(@RequestBody TrainerIncome income) {
+        return ResponseEntity.ok(userService.saveIncome(income));
+    }
+
+    // Upcoming for a specific trainer
+    @GetMapping("/upcoming/{trainerId}")
+    public ResponseEntity<List<TrainerIncome>> getUpcomingByTrainer(@PathVariable Long trainerId) {
+        return ResponseEntity.ok(userService.getUpcomingPaymentsByTrainer(trainerId));
+    }
+
+    // Upcoming for all trainers (admin)
+    @GetMapping("/upcoming")
+    public ResponseEntity<List<TrainerIncome>> getAllUpcoming() {
+        return ResponseEntity.ok(userService.getAllUpcomingPayments());
+    }
+
+    // Due soon (within next N days) for a specific trainer
+    @GetMapping("/due-soon/{trainerId}")
+    public ResponseEntity<List<TrainerIncome>> getDueSoonByTrainer(
+            @PathVariable Long trainerId,
+            @RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(userService.getDueSoonByTrainer(trainerId, days));
+    }
+
+    // Due soon (within next N days) for all trainers (admin)
+    @GetMapping("/due-soon")
+    public ResponseEntity<List<TrainerIncome>> getAllDueSoon(@RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(userService.getAllDueSoon(days));
+    }
+
+    // Renew a payment cycle for an existing record (sets lastPaymentDate=today, recomputes nextPaymentDate)
+    @PutMapping("/{incomeId}/renew")
+    public ResponseEntity<TrainerIncome> renewPayment(@PathVariable Long incomeId) {
+        return ResponseEntity.ok(userService.renewPayment(incomeId));
+    }
 
 }
