@@ -69,6 +69,10 @@ public interface UserService {
      */
     List<TrainerIncome> getAllDueSoon(int days);
 
+
+    void disableUser(Long userId);
+    void enableUser(Long userId);
+
     /**
      * Renew a payment cycle:
      * - Sets lastPaymentDate = today
