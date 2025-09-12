@@ -153,7 +153,7 @@ public class UserController {
         }
     }
 
-//trainer
+    //trainer
     @PostMapping(path = "/trainer-activate")
     public ResponseEntity<DefaultResponse> trainerActivate(@Valid @RequestBody TrainerActivateRequest request) {
         BaseResponse<HashMap<String, Object>> response = userService.activateUser(request);
@@ -205,24 +205,12 @@ public class UserController {
         return ResponseEntity.ok(upcoming);
     }
 
-    // GET: all upcoming payments (admin-level)
-    @GetMapping("/upcoming")
-    public ResponseEntity<List<TrainerIncome>> getAllUpcomingPayments() {
-        List<TrainerIncome> upcoming = userService.getAllUpcomingPayments();
-        return ResponseEntity.ok(upcoming);
-    }
-
     // Create/save a payment record (auto-calculates nextPaymentDate)
     @PostMapping("/save")
     public ResponseEntity<TrainerIncome> saveIncome(@RequestBody TrainerIncome income) {
         return ResponseEntity.ok(userService.saveIncome(income));
     }
 
-    // Upcoming for a specific trainer
-    @GetMapping("/upcoming/{trainerId}")
-    public ResponseEntity<List<TrainerIncome>> getUpcomingByTrainer(@PathVariable Long trainerId) {
-        return ResponseEntity.ok(userService.getUpcomingPaymentsByTrainer(trainerId));
-    }
 
     // Upcoming for all trainers (admin)
     @GetMapping("/upcoming")
