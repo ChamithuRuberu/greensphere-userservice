@@ -5,6 +5,8 @@ import com.greensphere.userservice.dto.request.workout.GetWorkoutsRequest;
 import com.greensphere.userservice.dto.request.workout.UpdateWorkoutHistoryRequest;
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
+import com.greensphere.userservice.dto.response.workout.UpcomingScheduleDTO;
+import com.greensphere.userservice.dto.response.workout.UpcomingSchedulesResponse;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.WorkOuts;
 import com.greensphere.userservice.entity.WorkoutHistory;
@@ -19,7 +21,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -289,6 +294,119 @@ public class WorkoutServiceImpl implements WorkoutService {
                 .mapToInt(p -> p.getDifficultyLevel())
                 .average()
                 .orElse(0.0);
+    }
+
+    @Override
+    public BaseResponse<UpcomingSchedulesResponse> getUpcomingSchedulesForTrainer(AppUser appUser, int daysAhead) {
+        try {
+            String trainerId = String.valueOf(appUser.getGovId());
+            int windowDays = Math.max(daysAhead, 0);
+
+            List<WorkOuts> planned = workoutsRepository.findByTrainerIdAndStatus(trainerId, "PLANNED");
+
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime windowEnd = now.plusDays(windowDays);
+
+            // Build result grouped by userId (username field stores clientId)
+            java.util.Map<String, java.util.List<UpcomingScheduleDTO>> grouped = new java.util.HashMap<>();
+
+            for (WorkOuts w : planned) {
+                // Compute next occurrence datetime from programStartDate + week/day + startTime
+                LocalDateTime occurrence = computeOccurrenceDateTime(w);
+                if (occurrence == null) {
+                    continue;
+                }
+                if (occurrence.isBefore(now) || occurrence.isAfter(windowEnd)) {
+                    continue;
+                }
+
+                UpcomingScheduleDTO dto = new UpcomingScheduleDTO();
+                dto.setUserId(w.getUsername());
+                dto.setWorkoutName(w.getName());
+                dto.setDay(w.getDay());
+                dto.setStartTime(w.getStartDateTime());
+                dto.setEndTime(w.getEndDateTime());
+                dto.setWeekNumber(w.getWeekNumber());
+                dto.setStatus(w.getStatus());
+
+                grouped.computeIfAbsent(w.getUsername(), k -> new java.util.ArrayList<>()).add(dto);
+            }
+
+            UpcomingSchedulesResponse data = new UpcomingSchedulesResponse();
+            data.setUserSchedules(grouped);
+
+            return BaseResponse.<UpcomingSchedulesResponse>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("Upcoming schedules fetched")
+                    .data(data)
+                    .build();
+        } catch (Exception e) {
+            return BaseResponse.<UpcomingSchedulesResponse>builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseUtil.FAILED)
+                    .message("Failed to fetch upcoming schedules: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    private LocalDateTime computeOccurrenceDateTime(WorkOuts w) {
+        try {
+            WorkoutHistory history = w.getWorkoutHistory();
+            if (history == null || history.getProgramStartDate() == null) {
+                return null;
+            }
+
+            // Parse programStartDate as LocalDate
+            LocalDate programStart = LocalDate.parse(history.getProgramStartDate());
+
+            // weekNumber starts at 1; compute the week's Monday
+            LocalDate weekStart = programStart.plusWeeks(Math.max(w.getWeekNumber() - 1, 0));
+
+            // Map day string to DayOfWeek
+            DayOfWeek dow = parseDayOfWeek(w.getDay());
+            if (dow == null) {
+                return null;
+            }
+
+            // Adjust to target day in that week
+            LocalDate targetDate = weekStart.with(dow);
+
+            // Parse start time HH:mm if available; otherwise default 08:00
+            String time = w.getStartDateTime();
+            if (time == null || !time.matches("^\\d{2}:\\d{2}$")) {
+                time = "08:00";
+            }
+            DateTimeFormatter tf = DateTimeFormatter.ofPattern("HH:mm");
+            java.time.LocalTime lt = java.time.LocalTime.parse(time, tf);
+
+            return LocalDateTime.of(targetDate, lt);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private DayOfWeek parseDayOfWeek(String day) {
+        if (day == null) return null;
+        String d = day.trim().toUpperCase();
+        switch (d) {
+            case "MONDAY":
+                return DayOfWeek.MONDAY;
+            case "TUESDAY":
+                return DayOfWeek.TUESDAY;
+            case "WEDNESDAY":
+                return DayOfWeek.WEDNESDAY;
+            case "THURSDAY":
+                return DayOfWeek.THURSDAY;
+            case "FRIDAY":
+                return DayOfWeek.FRIDAY;
+            case "SATURDAY":
+                return DayOfWeek.SATURDAY;
+            case "SUNDAY":
+                return DayOfWeek.SUNDAY;
+            default:
+                return null;
+        }
     }
 
     private void updateWorkoutHistoryStatus(WorkoutHistory history, UpdateWorkoutHistoryRequest request) {
