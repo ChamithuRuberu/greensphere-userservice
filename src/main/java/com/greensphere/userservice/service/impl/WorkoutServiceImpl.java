@@ -25,6 +25,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.OffsetDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -312,7 +314,7 @@ public class WorkoutServiceImpl implements WorkoutService {
 
             for (WorkOuts w : planned) {
                 // Compute next occurrence datetime from programStartDate + week/day + startTime
-                LocalDateTime occurrence = computeOccurrenceDateTime(w);
+                LocalDateTime occurrence = computeOccurrenceDateTime(w, now);
                 if (occurrence == null) {
                     continue;
                 }
@@ -350,15 +352,19 @@ public class WorkoutServiceImpl implements WorkoutService {
         }
     }
 
-    private LocalDateTime computeOccurrenceDateTime(WorkOuts w) {
+    private LocalDateTime computeOccurrenceDateTime(WorkOuts w, LocalDateTime referenceNow) {
         try {
             WorkoutHistory history = w.getWorkoutHistory();
             if (history == null || history.getProgramStartDate() == null) {
                 return null;
             }
 
-            // Parse programStartDate as LocalDate
-            LocalDate programStart = LocalDate.parse(history.getProgramStartDate());
+            // Parse programStartDate flexibly (date or datetime with/without offset)
+            LocalDate programStart = parseProgramStartDate(history.getProgramStartDate());
+            if (programStart == null) {
+                return null;
+            }
+            LocalDate programEnd = parseProgramDate(history.getProgramEndDate());
 
             // weekNumber starts at 1; compute the week's Monday
             LocalDate weekStart = programStart.plusWeeks(Math.max(w.getWeekNumber() - 1, 0));
@@ -369,8 +375,8 @@ public class WorkoutServiceImpl implements WorkoutService {
                 return null;
             }
 
-            // Adjust to target day in that week
-            LocalDate targetDate = weekStart.with(dow);
+            // Adjust to target day in that week (next or same)
+            LocalDate targetDate = weekStart.with(TemporalAdjusters.nextOrSame(dow));
 
             // Parse start time HH:mm if available; otherwise default 08:00
             String time = w.getStartDateTime();
@@ -380,10 +386,48 @@ public class WorkoutServiceImpl implements WorkoutService {
             DateTimeFormatter tf = DateTimeFormatter.ofPattern("HH:mm");
             java.time.LocalTime lt = java.time.LocalTime.parse(time, tf);
 
-            return LocalDateTime.of(targetDate, lt);
+            LocalDateTime occurrence = LocalDateTime.of(targetDate, lt);
+
+            // Roll forward weekly until in the future (bounded by programEnd if provided)
+            int safetyCounter = 0;
+            while (occurrence.isBefore(referenceNow) && safetyCounter < 60) {
+                LocalDateTime next = occurrence.plusWeeks(1);
+                if (programEnd != null && next.toLocalDate().isAfter(programEnd)) {
+                    break;
+                }
+                occurrence = next;
+                safetyCounter++;
+            }
+
+            // If still before now after rolling, skip
+            if (occurrence.isBefore(referenceNow)) {
+                return null;
+            }
+
+            return occurrence;
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    private LocalDate parseProgramStartDate(String value) {
+        return parseProgramDate(value);
+    }
+
+    private LocalDate parseProgramDate(String value) {
+        if (value == null) return null;
+        String v = value.trim();
+        // Try plain date first
+        try { return LocalDate.parse(v); } catch (Exception ignored) {}
+        // Try ISO local datetime (e.g., 2025-09-05T11:50:44.680370)
+        try { return LocalDateTime.parse(v, DateTimeFormatter.ISO_DATE_TIME).toLocalDate(); } catch (Exception ignored) {}
+        // Try ISO offset datetime (e.g., 2025-09-05T11:50:44Z or with timezone offset)
+        try { return OffsetDateTime.parse(v, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDate(); } catch (Exception ignored) {}
+        // Try common fallback patterns
+        try { return LocalDateTime.parse(v, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")).toLocalDate(); } catch (Exception ignored) {}
+        try { return LocalDateTime.parse(v, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toLocalDate(); } catch (Exception ignored) {}
+        // As a last resort, return null to skip the record
+        return null;
     }
 
     private DayOfWeek parseDayOfWeek(String day) {
