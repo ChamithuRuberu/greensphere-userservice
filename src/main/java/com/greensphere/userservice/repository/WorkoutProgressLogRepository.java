@@ -7,4 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface WorkoutProgressLogRepository extends JpaRepository<WorkoutProgressLog, Long> {
+    java.util.List<WorkoutProgressLog> findByWorkoutHistory_TrainerIdAndWorkoutDateAfter(String trainerId, java.time.LocalDateTime after);
+    java.util.List<WorkoutProgressLog> findByWorkoutHistory_UserIdAndWorkoutDateAfter(String userId, java.time.LocalDateTime after);
+    java.util.List<WorkoutProgressLog> findByWorkoutDateAfter(java.time.LocalDateTime after);
 }

@@ -7,6 +7,7 @@ import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.DefaultResponse;
 import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
 import com.greensphere.userservice.dto.response.workout.UpcomingSchedulesResponse;
+import com.greensphere.userservice.dto.response.workout.RecentActivitiesResponse;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.service.WorkoutService;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
@@ -77,6 +78,29 @@ public class WorkoutController {
             @RequestAttribute("user") AppUser appUser,
             @RequestParam(defaultValue = "7") int days) {
         BaseResponse<UpcomingSchedulesResponse> response = workoutService.getUpcomingSchedulesForTrainer(appUser, days);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(
+                    ResponseUtil.SUCCESS,
+                    response.getMessage(),
+                    response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(
+                            ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE,
+                            response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest().body(DefaultResponse.error(
+                    ResponseUtil.FAILED,
+                    response.getMessage(),
+                    response.getData()));
+        }
+    }
+
+    @GetMapping("/recent-activities")
+    public ResponseEntity<DefaultResponse> getRecentActivities(
+            @RequestAttribute("user") AppUser appUser,
+            @RequestParam(defaultValue = "7") int days) {
+        BaseResponse<RecentActivitiesResponse> response = workoutService.getRecentActivitiesForTrainer(appUser, days);
         if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
             return ResponseEntity.ok(DefaultResponse.success(
                     ResponseUtil.SUCCESS,

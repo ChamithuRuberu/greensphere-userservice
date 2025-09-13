@@ -6,6 +6,7 @@ import com.greensphere.userservice.dto.request.workout.UpdateWorkoutHistoryReque
 import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
 import com.greensphere.userservice.dto.response.workout.UpcomingSchedulesResponse;
+import com.greensphere.userservice.dto.response.workout.RecentActivitiesResponse;
 import com.greensphere.userservice.entity.AppUser;
 
 public interface WorkoutService {
@@ -16,4 +17,6 @@ public interface WorkoutService {
     BaseResponse<?> updateWorkoutHistory(AppUser appUser, UpdateWorkoutHistoryRequest request);
 
     BaseResponse<UpcomingSchedulesResponse> getUpcomingSchedulesForTrainer(AppUser appUser, int daysAhead);
+
+    BaseResponse<RecentActivitiesResponse> getRecentActivitiesForTrainer(AppUser appUser, int daysBack);
 }

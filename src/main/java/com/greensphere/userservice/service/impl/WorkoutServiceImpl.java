@@ -7,6 +7,8 @@ import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.workout.GetAllWorkoutsResponse;
 import com.greensphere.userservice.dto.response.workout.UpcomingScheduleDTO;
 import com.greensphere.userservice.dto.response.workout.UpcomingSchedulesResponse;
+import com.greensphere.userservice.dto.response.workout.RecentActivitiesResponse;
+import com.greensphere.userservice.dto.response.workout.RecentActivityDTO;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.WorkOuts;
 import com.greensphere.userservice.entity.WorkoutHistory;
@@ -359,6 +361,66 @@ public class WorkoutServiceImpl implements WorkoutService {
                     .code(ResponseCodeUtil.FAILED_CODE)
                     .title(ResponseUtil.FAILED)
                     .message("Failed to fetch upcoming schedules: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @Override
+    public BaseResponse<RecentActivitiesResponse> getRecentActivitiesForTrainer(AppUser appUser, int daysBack) {
+        try {
+            String trainerId = String.valueOf(appUser.getGovId());
+            int windowDays = Math.max(daysBack, 0);
+            java.time.LocalDateTime after = java.time.LocalDateTime.now().minusDays(windowDays);
+
+            java.util.List<com.greensphere.userservice.entity.WorkoutProgressLog> logs =
+                    workoutProgressLogRepository.findByWorkoutHistory_TrainerIdAndWorkoutDateAfter(trainerId, after);
+
+            java.util.Map<String, java.util.List<RecentActivityDTO>> grouped = new java.util.HashMap<>();
+            java.util.Map<String, String> userIdToName = new java.util.HashMap<>();
+
+            for (com.greensphere.userservice.entity.WorkoutProgressLog log : logs) {
+                com.greensphere.userservice.entity.WorkoutHistory hist = log.getWorkoutHistory();
+                if (hist == null) continue;
+                String userId = hist.getUserId();
+                if (userId == null) continue;
+
+                RecentActivityDTO dto = new RecentActivityDTO();
+                dto.setUserId(userId);
+                String name = userIdToName.get(userId);
+                if (name == null) {
+                    name = resolveUserFullName(userId, hist);
+                    if (name != null) userIdToName.put(userId, name);
+                }
+                dto.setUserName(name);
+                dto.setExerciseName(log.getExerciseName());
+                dto.setCompletedSets(log.getCompletedSets());
+                dto.setCompletedReps(log.getCompletedReps());
+                dto.setWeightUsed(log.getWeightUsed());
+                dto.setPerformanceRating(log.getPerformanceRating());
+                dto.setEnergyLevel(log.getEnergyLevel());
+                dto.setTrainerNotes(log.getTrainerNotes());
+                dto.setClientFeedback(log.getClientFeedback());
+                dto.setWorkoutDate(log.getWorkoutDate());
+                dto.setWeekNumber(log.getWeekNumber());
+                dto.setDay(log.getDay());
+
+                grouped.computeIfAbsent(userId, k -> new java.util.ArrayList<>()).add(dto);
+            }
+
+            RecentActivitiesResponse data = new RecentActivitiesResponse();
+            data.setUserActivities(grouped);
+
+            return BaseResponse.<RecentActivitiesResponse>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("Recent activities fetched")
+                    .data(data)
+                    .build();
+        } catch (Exception e) {
+            return BaseResponse.<RecentActivitiesResponse>builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseUtil.FAILED)
+                    .message("Failed to fetch recent activities: " + e.getMessage())
                     .build();
         }
     }
