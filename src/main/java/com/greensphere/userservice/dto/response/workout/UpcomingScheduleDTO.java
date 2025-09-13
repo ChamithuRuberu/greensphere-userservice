@@ -7,6 +7,7 @@ import lombok.Setter;
 @Setter
 public class UpcomingScheduleDTO {
     private String userId;
+    private String userName;
     private String workoutName;
     private String day;
     private String startTime;

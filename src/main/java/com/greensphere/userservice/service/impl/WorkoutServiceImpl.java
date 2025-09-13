@@ -14,6 +14,7 @@ import com.greensphere.userservice.entity.WorkoutProgressLog;
 import com.greensphere.userservice.repository.WorkoutProgressLogRepository;
 import com.greensphere.userservice.repository.WorkoutsHistoryRepository;
 import com.greensphere.userservice.repository.WorkoutsRepository;
+import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.service.WorkoutService;
 import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
@@ -39,6 +40,7 @@ public class WorkoutServiceImpl implements WorkoutService {
     private final WorkoutsRepository workoutsRepository;
     private final WorkoutsHistoryRepository workoutsHistoryRepository;
     private final WorkoutProgressLogRepository workoutProgressLogRepository;
+    private final UserRepository userRepository;
 
     @Override
     public BaseResponse<GetAllWorkoutsResponse> getWorkoutsByUsername(AppUser appUser, GetWorkoutsRequest request) {
@@ -311,6 +313,7 @@ public class WorkoutServiceImpl implements WorkoutService {
 
             // Build result grouped by userId (username field stores clientId)
             java.util.Map<String, java.util.List<UpcomingScheduleDTO>> grouped = new java.util.HashMap<>();
+            java.util.Map<String, String> userIdToName = new java.util.HashMap<>();
 
             for (WorkOuts w : planned) {
                 // Compute next occurrence datetime from programStartDate + week/day + startTime
@@ -324,6 +327,15 @@ public class WorkoutServiceImpl implements WorkoutService {
 
                 UpcomingScheduleDTO dto = new UpcomingScheduleDTO();
                 dto.setUserId(w.getUsername());
+                // Resolve user name by username/UID (AppUser.username)
+                String uid = w.getUsername();
+                String name = userIdToName.get(uid);
+                if (name == null) {
+                    com.greensphere.userservice.entity.AppUser user = userRepository.findAppUserByUsername(uid);
+                    name = (user != null && user.getFullName() != null) ? user.getFullName() : null;
+                    if (name != null) userIdToName.put(uid, name);
+                }
+                dto.setUserName(name);
                 dto.setWorkoutName(w.getName());
                 dto.setDay(w.getDay());
                 dto.setStartTime(w.getStartDateTime());
