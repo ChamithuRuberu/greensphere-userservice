@@ -327,12 +327,11 @@ public class WorkoutServiceImpl implements WorkoutService {
 
                 UpcomingScheduleDTO dto = new UpcomingScheduleDTO();
                 dto.setUserId(w.getUsername());
-                // Resolve user name by username/UID (AppUser.username)
+                // Resolve user full name from multiple identifiers
                 String uid = w.getUsername();
                 String name = userIdToName.get(uid);
                 if (name == null) {
-                    com.greensphere.userservice.entity.AppUser user = userRepository.findAppUserByUsername(uid);
-                    name = (user != null && user.getFullName() != null) ? user.getFullName() : null;
+                    name = resolveUserFullName(uid, w.getWorkoutHistory());
                     if (name != null) userIdToName.put(uid, name);
                 }
                 dto.setUserName(name);
@@ -439,6 +438,48 @@ public class WorkoutServiceImpl implements WorkoutService {
         try { return LocalDateTime.parse(v, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")).toLocalDate(); } catch (Exception ignored) {}
         try { return LocalDateTime.parse(v, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toLocalDate(); } catch (Exception ignored) {}
         // As a last resort, return null to skip the record
+        return null;
+    }
+
+    private String resolveUserFullName(String identifier, WorkoutHistory history) {
+        try {
+            com.greensphere.userservice.entity.AppUser user = null;
+
+            if (identifier != null) {
+                String id = identifier.trim();
+                // Try by email
+                if (id.contains("@")) {
+                    user = userRepository.findAppUserByEmail(id);
+                }
+                // Try by username
+                if (user == null) {
+                    user = userRepository.findAppUserByUsername(id);
+                }
+                // Try by numeric IDs: primary key id or govId
+                if (user == null && id.matches("^\\d+$")) {
+                    Long num = Long.parseLong(id);
+                    // by primary key id
+                    user = userRepository.findById(num).orElse(null);
+                    // by govId (role filter optional)
+                    if (user == null) {
+                        java.util.List<com.greensphere.userservice.entity.AppUser> list = userRepository.findAllByGovIdAndRoleType(num, "USER");
+                        if (!list.isEmpty()) user = list.get(0);
+                    }
+                }
+                if (user != null && user.getFullName() != null) {
+                    return user.getFullName();
+                }
+            }
+
+            // Fallback: check workout history's userId
+            if (history != null && history.getUserId() != null) {
+                String uid = history.getUserId();
+                if (!uid.equals(identifier)) {
+                    return resolveUserFullName(uid, null);
+                }
+            }
+        } catch (Exception ignored) {
+        }
         return null;
     }
 
