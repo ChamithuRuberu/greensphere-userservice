@@ -7,4 +7,6 @@ import java.util.HashMap;
 
 public interface GymService {
     BaseResponse<HashMap<String,Object>> registerGym(GymRegisterRequest gymRegisterRequest);
+
+    BaseResponse<java.util.List<com.greensphere.userservice.entity.Gym>> getAllGyms();
 }

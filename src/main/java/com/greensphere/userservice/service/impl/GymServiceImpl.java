@@ -76,4 +76,15 @@ public class GymServiceImpl implements GymService {
                     .build();
         }
     }
+
+    @Override
+    public BaseResponse<java.util.List<Gym>> getAllGyms() {
+        java.util.List<Gym> gyms = gymRepository.findAll();
+        return BaseResponse.<java.util.List<Gym>>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseUtil.SUCCESS)
+                .message("Gyms fetched")
+                .data(gyms)
+                .build();
+    }
 }
