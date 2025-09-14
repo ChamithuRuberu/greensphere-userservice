@@ -7,6 +7,8 @@ import com.greensphere.userservice.dto.request.UserActivateByGymRequest;
 import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
+import com.greensphere.userservice.dto.request.userRegister.AdminCreateUserRequest;
+import com.greensphere.userservice.dto.request.userRegister.AdminCreateTrainerRequest;
 import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
@@ -84,4 +86,8 @@ public interface UserService {
     BaseResponse<UserHealthDetailsResponse> getMyHealthDetails(AppUser appUser);
 
     BaseResponse<java.util.List<com.greensphere.userservice.entity.TrainerIncome>> getMyPaymentHistory(AppUser appUser);
+
+    BaseResponse<java.util.HashMap<String, Object>> adminCreateUser(AppUser actor, AdminCreateUserRequest req);
+
+    BaseResponse<java.util.HashMap<String, Object>> adminCreateTrainer(AppUser actor, AdminCreateTrainerRequest req);
 }

@@ -12,6 +12,8 @@ import com.greensphere.userservice.dto.request.logOutRequest.LogOutRequest;
 import com.greensphere.userservice.dto.request.tokenRequest.TokenRequest;
 import com.greensphere.userservice.dto.request.userLogin.UserLoginRequest;
 import com.greensphere.userservice.dto.request.userRegister.GovUserRegisterRequest;
+import com.greensphere.userservice.dto.request.userRegister.AdminCreateUserRequest;
+import com.greensphere.userservice.dto.request.userRegister.AdminCreateTrainerRequest;
 import com.greensphere.userservice.dto.request.userRegister.SetUpDetailsRequest;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterRequestDto;
 import com.greensphere.userservice.dto.request.userRegister.UserRegisterVerifyRequest;
@@ -71,6 +73,7 @@ public class UserServiceImpl implements UserService {
     private final TrainerIncomeRepository trainerIncomeRepository;
     private final GymIncomeRepository gymIncomeRepository;
     private final AdminIncomeRepository adminIncomeRepository;
+    private final AuditLogRepository auditLogRepository;
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -1141,5 +1144,138 @@ public class UserServiceImpl implements UserService {
                 .message("Payment history fetched")
                 .data(history)
                 .build();
+    }
+
+    @Override
+    public BaseResponse<java.util.HashMap<String, Object>> adminCreateUser(AppUser actor, AdminCreateUserRequest req) {
+        try {
+            AppUser user = AppUser.builder()
+                    .email(req.getEmail())
+                    .mobile(req.getMobile())
+                    .nic(req.getNic())
+                    .city(req.getCity())
+                    .fullName(req.getFullName())
+                    .height(req.getHeight())
+                    .weight(req.getWeight())
+                    .injuries(req.getInjuries())
+                    .govId(req.getTrainerGovId())
+                    .gymId(req.getGymId())
+                    .roleType("ROLE_USER")
+                    .status(ACTIVE.name())
+                    .registeredAt(LocalDateTime.now())
+                    .build();
+            user.setEncryptedPassword(req.getPassword());
+            // attach role ROLE_USER
+            Role roleByName = roleService.getRoleByName("ROLE_USER");
+            java.util.Set<Role> roles = new java.util.HashSet<>();
+            roles.add(roleByName);
+            user.setRoles(roles);
+            persistUser(user);
+
+            // Audit trail
+            try {
+                com.greensphere.userservice.entity.AuditLog log = new com.greensphere.userservice.entity.AuditLog();
+                log.setActorId(actor != null ? actor.getUsername() : null);
+                log.setActorType(actor != null ? actor.getRoleType() : null);
+                log.setAction("ADMIN CREATE USER");
+                log.setResourceId(user.getUsername());
+                log.setResourceType("USER");
+                log.setDescription("Created user by admin");
+                log.setOccurredAt(java.time.LocalDateTime.now());
+                log.setIp(null);
+                auditLogRepository.save(log);
+            } catch (Exception ignored) {}
+
+            HashMap<String, Object> data = new HashMap<>();
+            data.put("username", user.getUsername());
+            data.put("trainer_govern_id", user.getGovId());
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("User created successfully")
+                    .data(data)
+                    .build();
+        } catch (Exception e) {
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseUtil.INTERNAL_SERVER_ERROR)
+                    .message("Failed to create user: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @Override
+    public BaseResponse<java.util.HashMap<String, Object>> adminCreateTrainer(AppUser actor, AdminCreateTrainerRequest req) {
+        try {
+            AppUser user = AppUser.builder()
+                    .email(req.getEmail())
+                    .mobile(req.getMobile())
+                    .nic(req.getNic())
+                    .city(req.getCity())
+                    .fullName(req.getFullName())
+                    .height(req.getHeight())
+                    .weight(req.getWeight())
+                    .govId(req.getTrainerGovId())
+                    .gymId(req.getGymId())
+                    .roleType("ROLE_TRAINER")
+                    .status(ACTIVE.name())
+                    .registeredAt(LocalDateTime.now())
+                    .build();
+            user.setEncryptedPassword(req.getPassword());
+            // attach role ROLE_TRAINER
+            Role roleByName = roleService.getRoleByName("ROLE_TRAINER");
+            java.util.Set<Role> roles = new java.util.HashSet<>();
+            roles.add(roleByName);
+            user.setRoles(roles);
+            persistUser(user);
+
+            // ensure Trainer entity
+            Trainer trainer = trainerRepository.findByTrainerId(String.valueOf(user.getGovId()));
+            if (trainer == null) {
+                trainer = new Trainer();
+            }
+            trainer.setName(user.getFullName());
+            trainer.setTrainerId(String.valueOf(user.getGovId()));
+            trainer.setHeight(req.getHeight());
+            trainer.setWeight(req.getWeight());
+            trainer.setServicePeriod(req.getServicePeriod());
+            trainer.setProfile(req.getProfile());
+            trainer.setEmail(user.getEmail());
+            trainer.setMobile(user.getMobile());
+            trainer.setLocation(user.getCity());
+            trainer.setRating("100%");
+            persistTrainer(trainer);
+
+            // Audit trail
+            try {
+                com.greensphere.userservice.entity.AuditLog log = new com.greensphere.userservice.entity.AuditLog();
+                log.setActorId(actor != null ? actor.getUsername() : null);
+                log.setActorType(actor != null ? actor.getRoleType() : null);
+                log.setAction("ADMIN CREATE TRAINER");
+                log.setResourceId(trainer.getTrainerId());
+                log.setResourceType("TRAINER");
+                log.setDescription("Created trainer by admin");
+                log.setOccurredAt(java.time.LocalDateTime.now());
+                log.setIp(null);
+                auditLogRepository.save(log);
+            } catch (Exception ignored) {}
+
+            HashMap<String, Object> data = new HashMap<>();
+            data.put("username", user.getUsername());
+            data.put("trainerId", trainer.getTrainerId());
+            data.put("trainer", trainer);
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("Trainer created successfully")
+                    .data(data)
+                    .build();
+        } catch (Exception e) {
+            return BaseResponse.<HashMap<String, Object>>builder()
+                    .code(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)
+                    .title(ResponseUtil.INTERNAL_SERVER_ERROR)
+                    .message("Failed to create trainer: " + e.getMessage())
+                    .build();
+        }
     }
 }
