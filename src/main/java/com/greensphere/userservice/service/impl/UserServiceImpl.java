@@ -1278,4 +1278,15 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
     }
+
+    @Override
+    public BaseResponse<java.util.List<AppUser>> getAllRoleUsers() {
+        java.util.List<AppUser> users = userRepository.findAllByRoleType("ROLE_USER");
+        return BaseResponse.<java.util.List<AppUser>>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseUtil.SUCCESS)
+                .message("Users fetched")
+                .data(users)
+                .build();
+    }
 }

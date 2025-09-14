@@ -90,4 +90,8 @@ public interface UserService {
     BaseResponse<java.util.HashMap<String, Object>> adminCreateUser(AppUser actor, AdminCreateUserRequest req);
 
     BaseResponse<java.util.HashMap<String, Object>> adminCreateTrainer(AppUser actor, AdminCreateTrainerRequest req);
+
+    BaseResponse<java.util.List<AppUser>> getAllRoleUsers();
+
+    BaseResponse<java.util.HashMap<String, Object>> getMyPaymentsTotal(AppUser appUser);
 }

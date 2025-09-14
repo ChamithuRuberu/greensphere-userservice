@@ -33,6 +33,8 @@ public class TrainerController {
         }
     }
 
+    // Simple cURL for get all trainers:
+    // curl -X POST 'http://localhost:8080/trainer/get-all-trainers'
     @PostMapping("/get-clients")
     public ResponseEntity<DefaultResponse> getClientsByTrainer(@RequestAttribute("user") AppUser appUser) {
         BaseResponse<HashMap<String, Object>> response = trainerService.getClientsByTrainer(appUser);
