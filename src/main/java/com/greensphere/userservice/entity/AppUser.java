@@ -51,7 +51,9 @@ public class AppUser extends BaseEntity {
     private String weight;
     @Column(length = 1000)
     private String injuries;
-
+    private String chest;
+    private String waist;
+    private String neck;
     @Column(columnDefinition = "int default 0")
     private int verifyAttempts;
     private LocalDateTime otpSentAt;

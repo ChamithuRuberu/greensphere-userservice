@@ -323,6 +323,9 @@ public class UserServiceImpl implements UserService {
             user.setInjuries(setUpDetailsRequest.getInjuries());
             user.setGovId(Long.valueOf(setUpDetailsRequest.getTrainerId()));
             user.setGymId(gymId);
+            user.setChest(setUpDetailsRequest.getChest());
+            user.setNeck(setUpDetailsRequest.getNeck());
+            user.setWaist(setUpDetailsRequest.getWaist());
             user.setRoleType("ROLE_USER");
             persistUser(user);
             log.info("setUpDetails-> User password setup details");
