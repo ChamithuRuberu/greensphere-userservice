@@ -12,8 +12,7 @@ import java.time.LocalDateTime;
 public class AuditLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "audit_log_sequence")
-    @SequenceGenerator(name = "audit_log_sequence", sequenceName = "audit_log_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String actorId;      // username, govId, or system

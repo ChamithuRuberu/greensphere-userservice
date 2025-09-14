@@ -32,17 +32,21 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
                 actorType = u.getRoleType();
             }
 
-            AuditLog log = new AuditLog();
-            log.setActorId(actorId);
-            log.setActorType(actorType);
-            log.setAction(request.getMethod() + " " + request.getRequestURI());
-            log.setResourceId(null);
-            log.setResourceType(null);
-            log.setDescription(null);
-            log.setOccurredAt(LocalDateTime.now());
-            log.setIp(request.getRemoteAddr());
+            // Avoid self-logging the audit endpoint to reduce noise
+            String path = request.getRequestURI();
+            if (!path.startsWith("/activity/audit")) {
+                AuditLog log = new AuditLog();
+                log.setActorId(actorId);
+                log.setActorType(actorType);
+                log.setAction(request.getMethod() + " " + path);
+                log.setResourceId(null);
+                log.setResourceType(null);
+                log.setDescription(null);
+                log.setOccurredAt(LocalDateTime.now());
+                log.setIp(request.getRemoteAddr());
 
-            auditLogRepository.save(log);
+                auditLogRepository.save(log);
+            }
         } catch (Exception ignored) {
         }
 

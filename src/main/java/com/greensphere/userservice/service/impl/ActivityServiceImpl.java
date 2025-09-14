@@ -18,6 +18,8 @@ import com.greensphere.userservice.utils.ResponseCodeUtil;
 import com.greensphere.userservice.utils.ResponseUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,64 +45,53 @@ public class ActivityServiceImpl implements ActivityService {
 
             List<AuditActivityDTO> activities = new ArrayList<>();
 
-            String role = appUser.getRoleType() != null ? appUser.getRoleType() : "";
-            String normRole = normalizeRole(role);
+            String normRole = normalizeRole(appUser.getRoleType());
 
-            // User: own workout logs
-            if ("USER".equalsIgnoreCase(normRole)) {
+            // Fallback: if role is missing/empty, still provide useful data (latest 50 audit logs)
+            if (normRole == null || normRole.isEmpty()) {
+                auditLogRepository.findAll(PageRequest.of(0, 50, Sort.by("occurredAt").descending()))
+                        .getContent()
+                        .forEach(a -> activities.add(mapAuditLog(a)));
+            }
+
+            if ("USER".equals(normRole)) {
                 String userId = appUser.getUsername();
-                List<WorkoutProgressLog> logs = workoutProgressLogRepository.findByWorkoutHistory_UserIdAndWorkoutDateAfter(userId, after);
-                logs.forEach(l -> activities.add(mapWorkoutLog(l)));
-
-                // Include own request audit trail
+                workoutProgressLogRepository.findByWorkoutHistory_UserIdAndWorkoutDateAfter(userId, after)
+                        .forEach(l -> activities.add(mapWorkoutLog(l)));
                 auditLogRepository.findByActorIdAndOccurredAtAfter(userId, after)
                         .forEach(a -> activities.add(mapAuditLog(a)));
-            }
-
-            // Trainer: logs of their clients + trainer incomes
-            if ("TRAINER".equalsIgnoreCase(normRole)) {
+            } else if ("TRAINER".equals(normRole)) {
                 String trainerId = String.valueOf(appUser.getGovId());
-                List<WorkoutProgressLog> logs = workoutProgressLogRepository.findByWorkoutHistory_TrainerIdAndWorkoutDateAfter(trainerId, after);
-                logs.forEach(l -> activities.add(mapWorkoutLog(l)));
-
-                // payments (trainer income) within next cycles are not strictly "recent", but we can include lastPaymentDate after 'after'
-                List<TrainerIncome> incomes = trainerIncomeRepository.findByTrainerIdAndNextPaymentDateBetween(appUser.getGovId(), LocalDate.now().minusDays(window), LocalDate.now().plusDays(window));
-                incomes.forEach(i -> activities.add(mapTrainerIncome(i)));
-
-                // Include trainer's own request audit trail
+                workoutProgressLogRepository.findByWorkoutHistory_TrainerIdAndWorkoutDateAfter(trainerId, after)
+                        .forEach(l -> activities.add(mapWorkoutLog(l)));
+                trainerIncomeRepository.findByTrainerIdAndNextPaymentDateBetween(appUser.getGovId(), LocalDate.now().minusDays(window), LocalDate.now().plusDays(window))
+                        .forEach(i -> activities.add(mapTrainerIncome(i)));
                 auditLogRepository.findByActorIdAndOccurredAtAfter(appUser.getUsername(), after)
                         .forEach(a -> activities.add(mapAuditLog(a)));
-            }
-
-            // Gym: gym incomes
-            if ("GYM".equalsIgnoreCase(normRole) || "GYM_ADMIN".equalsIgnoreCase(normRole)) {
+            } else if (isGymRole(normRole)) {
                 Long gymId = appUser.getGymId();
                 if (gymId != null) {
-                    List<GymIncome> incomes = gymIncomeRepository.findByGymIdAndNextPaymentDateAfter(gymId, LocalDate.now().minusDays(window));
-                    incomes.forEach(i -> activities.add(mapGymIncome(i)));
+                    gymIncomeRepository.findByGymIdAndNextPaymentDateAfter(gymId, LocalDate.now().minusDays(window))
+                            .forEach(i -> activities.add(mapGymIncome(i)));
                 }
-
-                // Include gym user's own request audit trail
                 auditLogRepository.findByActorIdAndOccurredAtAfter(appUser.getUsername(), after)
                         .forEach(a -> activities.add(mapAuditLog(a)));
-            }
-
-            // Super admin: everything
-            if ("SUPER_ADMIN".equalsIgnoreCase(normRole) || "ADMIN".equalsIgnoreCase(normRole)) {
-                List<WorkoutProgressLog> logs = workoutProgressLogRepository.findByWorkoutDateAfter(after);
-                logs.forEach(l -> activities.add(mapWorkoutLog(l)));
-
+            } else if (isAdminRole(normRole)) {
+                workoutProgressLogRepository.findByWorkoutDateAfter(after)
+                        .forEach(l -> activities.add(mapWorkoutLog(l)));
                 trainerIncomeRepository.findByNextPaymentDateBetween(LocalDate.now().minusDays(window), LocalDate.now().plusDays(window))
                         .forEach(i -> activities.add(mapTrainerIncome(i)));
                 gymIncomeRepository.findByNextPaymentDateAfter(LocalDate.now().minusDays(window))
                         .forEach(i -> activities.add(mapGymIncome(i)));
-
-                // Audit logs (raw request trail)
                 auditLogRepository.findByOccurredAtAfter(after)
+                        .forEach(a -> activities.add(mapAuditLog(a)));
+                // Always include latest 50 audit rows for admin
+                auditLogRepository.findAll(PageRequest.of(0, 50, Sort.by("occurredAt").descending()))
+                        .getContent()
                         .forEach(a -> activities.add(mapAuditLog(a)));
             }
 
-            // Sort descending by occurredAt
+            // Final sort desc by time
             activities.sort(Comparator.comparing(AuditActivityDTO::getOccurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
 
             AuditTrailResponse data = new AuditTrailResponse();
@@ -182,8 +173,17 @@ public class ActivityServiceImpl implements ActivityService {
     private String normalizeRole(String role) {
         if (role == null) return "";
         String r = role.trim().toUpperCase();
-        if (r.startsWith("ROLE_")) r = r.substring(5);
+        if (r.startsWith("ROLE_")) r = r.substring(5); // -> SUPER_ADMIN, TRAINER, GYM, USER
+        if ("SUPERADMIN".equals(r)) r = "SUPER_ADMIN"; // map DB value 'superadmin'
         return r;
+    }
+
+    private boolean isAdminRole(String r) {
+        return "SUPER_ADMIN".equals(r) || "SUPERADMIN".equals(r);
+    }
+
+    private boolean isGymRole(String r) {
+        return "GYM".equals(r);
     }
 }
 
