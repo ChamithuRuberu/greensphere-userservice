@@ -9,4 +9,6 @@ public interface TrainerService {
     BaseResponse<HashMap<String, Object>> getAllTrainers();
 
     BaseResponse<HashMap<String, Object>> getClientsByTrainer(AppUser appUser);
+
+    BaseResponse<HashMap<String, Object>> getTrainerForClient(AppUser appUser);
 }
