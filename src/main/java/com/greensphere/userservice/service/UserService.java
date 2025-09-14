@@ -82,4 +82,6 @@ public interface UserService {
     TrainerIncome renewPayment(Long incomeId);
 
     BaseResponse<UserHealthDetailsResponse> getMyHealthDetails(AppUser appUser);
+
+    BaseResponse<java.util.List<com.greensphere.userservice.entity.TrainerIncome>> getMyPaymentHistory(AppUser appUser);
 }

@@ -620,6 +620,7 @@ public class UserServiceImpl implements UserService {
             trainerIncome.setNextPaymentDate(LocalDate.now().plusMonths(1));
             trainerIncome.setUserEmail(loginUser.getEmail());
             trainerIncome.setAmount(request.getAmount());
+            trainerIncome.setUserName(loginUser.getUsername());
             trainerIncomeRepository.save(trainerIncome);
 
             loginUser.setStatus(ACTIVE.name());
@@ -1127,6 +1128,18 @@ public class UserServiceImpl implements UserService {
                 .title(ResponseUtil.SUCCESS)
                 .message("Health details fetched")
                 .data(dto)
+                .build();
+    }
+
+    @Override
+    public BaseResponse<java.util.List<TrainerIncome>> getMyPaymentHistory(AppUser appUser) {
+        String email = appUser.getUsername();
+        java.util.List<TrainerIncome> history = trainerIncomeRepository.findByUserNameOrderByLastPaymentDateDesc(email);
+        return BaseResponse.<java.util.List<TrainerIncome>>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseUtil.SUCCESS)
+                .message("Payment history fetched")
+                .data(history)
                 .build();
     }
 }

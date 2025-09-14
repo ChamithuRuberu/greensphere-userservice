@@ -21,4 +21,6 @@ public interface TrainerIncomeRepository extends JpaRepository<TrainerIncome, Lo
     List<TrainerIncome> findByTrainerIdAndNextPaymentDateBefore(Long trainerId, LocalDate date);
     List<TrainerIncome> findByNextPaymentDateBefore(LocalDate date);
 
+    // User payment history (by user email)
+    java.util.List<TrainerIncome> findByUserNameOrderByLastPaymentDateDesc(String username);
 }

@@ -19,6 +19,7 @@ public class TrainerIncome {
     private Long id;
     private Long trainerId;
     private String userEmail;
+    private String userName;
     private int month;
     private LocalDate lastPaymentDate;
     private LocalDate nextPaymentDate;
