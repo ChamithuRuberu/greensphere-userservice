@@ -46,7 +46,25 @@ public class WorkoutServiceImpl implements WorkoutService {
 
     @Override
     public BaseResponse<GetAllWorkoutsResponse> getWorkoutsByUsername(AppUser appUser, GetWorkoutsRequest request) {
-        return null;
+        try {
+            String targetUsername = String.valueOf(appUser.getId());
+            List<WorkOuts> items = workoutsRepository.findByUsernameAndStatus(targetUsername, "PLANNED");
+            GetAllWorkoutsResponse resp = new GetAllWorkoutsResponse();
+            resp.setWorkouts(items);
+
+            return BaseResponse.<GetAllWorkoutsResponse>builder()
+                    .code(ResponseCodeUtil.SUCCESS_CODE)
+                    .title(ResponseUtil.SUCCESS)
+                    .message("Workouts fetched")
+                    .data(resp)
+                    .build();
+        } catch (Exception e) {
+            return BaseResponse.<GetAllWorkoutsResponse>builder()
+                    .code(ResponseCodeUtil.FAILED_CODE)
+                    .title(ResponseUtil.FAILED)
+                    .message("Failed to fetch workouts: " + e.getMessage())
+                    .build();
+        }
     }
 
     @Override

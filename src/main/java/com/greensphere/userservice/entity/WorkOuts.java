@@ -1,6 +1,7 @@
 package com.greensphere.userservice.entity;
 
 import com.greensphere.userservice.entity.WorkoutHistory;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -56,5 +57,6 @@ public class WorkOuts extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "workout_history_id")
+    @JsonBackReference
     private WorkoutHistory workoutHistory;
 }

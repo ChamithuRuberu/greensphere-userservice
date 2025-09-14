@@ -17,4 +17,8 @@ public interface WorkoutsRepository extends JpaRepository<WorkOuts,Long> {
     Optional<WorkOuts> findByWorkoutHistoryAndNameAndWeekNumber(WorkoutHistory workoutHistory, String name, Integer weekNumber);
 
     List<WorkOuts> findByTrainerIdAndStatus(String trainerId, String status);
+
+    List<WorkOuts> findByUsername(String username);
+
+    List<WorkOuts> findByUsernameAndStatus(String username, String status);
 }
