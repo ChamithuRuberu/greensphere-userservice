@@ -14,6 +14,7 @@ import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
+import com.greensphere.userservice.dto.response.user.UserHealthDetailsResponse;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.TrainerIncome;
 import jakarta.servlet.http.HttpServletRequest;
@@ -78,4 +79,7 @@ public interface UserService {
      * - Sets lastPaymentDate = today
      * - Recomputes nextPaymentDate = lastPaymentDate + month(s)
      */
-    TrainerIncome renewPayment(Long incomeId);}
+    TrainerIncome renewPayment(Long incomeId);
+
+    BaseResponse<UserHealthDetailsResponse> getMyHealthDetails(AppUser appUser);
+}

@@ -12,6 +12,7 @@ import com.greensphere.userservice.dto.response.DefaultResponse;
 import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
+import com.greensphere.userservice.dto.response.user.UserHealthDetailsResponse;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.TrainerIncome;
 import com.greensphere.userservice.service.UserService;
@@ -150,6 +151,20 @@ public class UserController {
         } else {
             return ResponseEntity.badRequest()
                     .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage()));
+        }
+    }
+
+    @GetMapping(path = "/me/health")
+    public ResponseEntity<DefaultResponse> getMyHealth(@RequestAttribute("user") AppUser appUser) {
+        BaseResponse<UserHealthDetailsResponse> response = userService.getMyHealthDetails(appUser);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
         }
     }
 

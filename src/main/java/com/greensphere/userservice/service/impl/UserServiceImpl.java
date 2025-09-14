@@ -22,6 +22,7 @@ import com.greensphere.userservice.dto.response.notificationServiceResponse.SmsR
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
+import com.greensphere.userservice.dto.response.user.UserHealthDetailsResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserObj;
 import com.greensphere.userservice.entity.*;
 import com.greensphere.userservice.enums.ResponseStatus;
@@ -1109,5 +1110,20 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setStatus("ACTIVE");     // reset status
         userRepository.save(user);
+    }
+
+    @Override
+    public BaseResponse<UserHealthDetailsResponse> getMyHealthDetails(AppUser appUser) {
+        AppUser user = userRepository.findAppUserByUsername(appUser.getUsername());
+        UserHealthDetailsResponse dto = new UserHealthDetailsResponse();
+        dto.setHeight(user.getHeight());
+        dto.setWeight(user.getWeight());
+        dto.setInjuries(user.getInjuries());
+        return BaseResponse.<UserHealthDetailsResponse>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseUtil.SUCCESS)
+                .message("Health details fetched")
+                .data(dto)
+                .build();
     }
 }
