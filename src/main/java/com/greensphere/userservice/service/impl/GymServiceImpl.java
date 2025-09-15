@@ -5,6 +5,7 @@ import com.greensphere.userservice.dto.response.BaseResponse;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.Gym;
 import com.greensphere.userservice.entity.Role;
+import com.greensphere.userservice.repository.AdminIncomeRepository;
 import com.greensphere.userservice.repository.GymRepository;
 import com.greensphere.userservice.repository.UserRepository;
 import com.greensphere.userservice.service.GymService;
@@ -27,6 +28,7 @@ public class GymServiceImpl implements GymService {
     private final GymRepository gymRepository;
     private final UserRepository userRepository;
     private final RoleServiceImpl roleService;
+    private final AdminIncomeRepository adminIncomeRepository;
 
     @Override
     public BaseResponse<HashMap<String, Object>> registerGym(GymRegisterRequest gymRegisterRequest) {
@@ -54,6 +56,24 @@ public class GymServiceImpl implements GymService {
                     gym.setGymName(gymRegisterRequest.getGymName());
                     gym.setAdminId(gymRegisterRequest.getAdminId());
                     gymRepository.save(gym);
+
+                    // Optional: create admin income if monthlyFee present and numeric
+                    try {
+                        if (gymRegisterRequest.getMonthlyFee() != null) {
+                            java.math.BigDecimal amt = new java.math.BigDecimal(gymRegisterRequest.getMonthlyFee());
+                            if (amt.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                                com.greensphere.userservice.entity.AdminIncome income = new com.greensphere.userservice.entity.AdminIncome();
+                                income.setGymId(gym.getId());
+                                income.setAdminId(gym.getAdminId());
+                                income.setUserEmail(gymRegisterRequest.getEmail());
+                                income.setMonth(1);
+                                income.setLastPaymentDate(java.time.LocalDate.now());
+                                income.setNextPaymentDate(income.getLastPaymentDate().plusMonths(1));
+                                income.setAmount(amt);
+                                adminIncomeRepository.save(income);// Save via repository (requires injection); skipping here if not available in this service
+                            }
+                        }
+                    } catch (Exception ignored) {}
                 }
             } else {
                 return BaseResponse.<HashMap<String, Object>>builder()

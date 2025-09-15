@@ -18,6 +18,8 @@ public class AdminCreateTrainerRequest {
     private String servicePeriod;
     private Long trainerGovId; // stored on user.govId and used as trainerId
     private Long gymId;        // optional
+    private java.math.BigDecimal amount; // admin income amount
+    private int month = 1; // billing months
 }
 
 

@@ -17,6 +17,8 @@ public class AdminCreateUserRequest {
     private String injuries;
     private Long trainerGovId; // assign trainer
     private Long gymId;        // optional gym
+    private java.math.BigDecimal amount; // admin income amount
+    private int month = 1; // billing months
 }
 
 

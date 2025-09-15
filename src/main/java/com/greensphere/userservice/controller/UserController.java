@@ -229,6 +229,22 @@ public class UserController {
         }
     }
 
+    // USER: get total payments summary (count, total)
+    @GetMapping(path = "/me/payments/total")
+    public ResponseEntity<DefaultResponse> getMyPaymentsTotal(@RequestAttribute("user") AppUser appUser) {
+        BaseResponse<java.math.BigDecimal> response = userService.getMyPaymentsTotalAmount(appUser);
+        if (response.getCode().equals(ResponseCodeUtil.SUCCESS_CODE)) {
+            return ResponseEntity.ok(DefaultResponse.success(ResponseUtil.SUCCESS, response.getMessage(), response.getData()));
+        } else if (response.getCode().equals(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE)) {
+            return ResponseEntity.internalServerError()
+                    .body(DefaultResponse.internalServerError(ResponseCodeUtil.INTERNAL_SERVER_ERROR_CODE, response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest()
+                    .body(DefaultResponse.error(ResponseUtil.FAILED, response.getMessage(), response.getData()));
+        }
+    }
+
+
     //trainer
     @PostMapping(path = "/trainer-activate")
     public ResponseEntity<DefaultResponse> trainerActivate(@Valid @RequestBody TrainerActivateRequest request) {

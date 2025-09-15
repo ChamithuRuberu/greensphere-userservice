@@ -21,6 +21,8 @@ public class AdminIncome {
     private Long gymId;
     private String userEmail;
     private int month;
+    private Long userId;
+    private Long trainerId;
     private LocalDate lastPaymentDate;
     private LocalDate nextPaymentDate;
     private BigDecimal amount;

@@ -1172,6 +1172,20 @@ public class UserServiceImpl implements UserService {
             user.setRoles(roles);
             persistUser(user);
 
+            // Record admin income if amount provided
+            if (req.getAmount() != null && req.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                AdminIncome income = new AdminIncome();
+                income.setGymId(user.getGymId());
+                income.setAdminId(user.getGymId());
+                income.setUserEmail(user.getEmail());
+                income.setMonth(Math.max(req.getMonth(), 1));
+                income.setLastPaymentDate(java.time.LocalDate.now());
+                income.setNextPaymentDate(income.getLastPaymentDate().plusMonths(income.getMonth()));
+                income.setAmount(req.getAmount());
+                income.setUserId(user.getId());
+                adminIncomeRepository.save(income);
+            }
+
             // Audit trail
             try {
                 com.greensphere.userservice.entity.AuditLog log = new com.greensphere.userservice.entity.AuditLog();
@@ -1246,6 +1260,20 @@ public class UserServiceImpl implements UserService {
             trainer.setRating("100%");
             persistTrainer(trainer);
 
+            // Record admin income if amount provided
+            if (req.getAmount() != null && req.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                AdminIncome income = new AdminIncome();
+                income.setGymId(user.getGymId());
+                income.setAdminId(user.getGymId());
+                income.setUserEmail(user.getEmail());
+                income.setMonth(Math.max(req.getMonth(), 1));
+                income.setLastPaymentDate(java.time.LocalDate.now());
+                income.setNextPaymentDate(income.getLastPaymentDate().plusMonths(income.getMonth()));
+                income.setAmount(req.getAmount());
+                income.setTrainerId(Long.valueOf(trainer.getTrainerId()));
+                adminIncomeRepository.save(income);
+            }
+
             // Audit trail
             try {
                 com.greensphere.userservice.entity.AuditLog log = new com.greensphere.userservice.entity.AuditLog();
@@ -1289,4 +1317,16 @@ public class UserServiceImpl implements UserService {
                 .data(users)
                 .build();
     }
+
+    @Override
+    public BaseResponse<java.math.BigDecimal> getMyPaymentsTotalAmount(AppUser appUser) {
+        java.math.BigDecimal total = adminIncomeRepository.sumAllAmounts();
+        return BaseResponse.<java.math.BigDecimal>builder()
+                .code(ResponseCodeUtil.SUCCESS_CODE)
+                .title(ResponseUtil.SUCCESS)
+                .message("Payments total fetched")
+                .data(total)
+                .build();
+    }
+
 }

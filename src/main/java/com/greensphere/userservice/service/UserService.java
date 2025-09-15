@@ -17,6 +17,7 @@ import com.greensphere.userservice.dto.response.UpdateUserDetailsResponse;
 import com.greensphere.userservice.dto.response.tokenValidationResponse.UserAuthResponse;
 import com.greensphere.userservice.dto.response.userLoginResponse.UserLoginResponse;
 import com.greensphere.userservice.dto.response.user.UserHealthDetailsResponse;
+import com.greensphere.userservice.entity.AdminIncome;
 import com.greensphere.userservice.entity.AppUser;
 import com.greensphere.userservice.entity.TrainerIncome;
 import jakarta.servlet.http.HttpServletRequest;
@@ -93,5 +94,9 @@ public interface UserService {
 
     BaseResponse<java.util.List<AppUser>> getAllRoleUsers();
 
-    BaseResponse<java.util.HashMap<String, Object>> getMyPaymentsTotal(AppUser appUser);
+
+
+    BaseResponse<java.math.BigDecimal> getMyPaymentsTotalAmount(AppUser appUser);
+
+
 }
