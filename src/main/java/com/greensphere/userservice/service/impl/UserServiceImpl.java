@@ -1054,72 +1054,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public TrainerIncome saveIncome(TrainerIncome income) {
-        // Default lastPaymentDate to today if null
-        if (income.getLastPaymentDate() == null) {
-            income.setLastPaymentDate(LocalDate.now());
-        }
-        // Auto-calc nextPaymentDate = lastPaymentDate + month(s)
-        if (income.getMonth() <= 0) {
-            throw new IllegalArgumentException("month must be >= 1");
-        }
-        income.setNextPaymentDate(income.getLastPaymentDate().plusMonths(income.getMonth()));
-        return trainerIncomeRepository.save(income);
-    }
-
-    @Override
-    public List<TrainerIncome> getUpcomingPaymentsByTrainer(Long trainerId) {
-        return trainerIncomeRepository.findByTrainerIdAndNextPaymentDateAfter(trainerId, LocalDate.now());
-    }
-
-    @Override
-    public List<TrainerIncome> getAllUpcomingPayments() {
-        return trainerIncomeRepository.findByNextPaymentDateAfter(LocalDate.now());
-    }
-
-    @Override
-    public List<TrainerIncome> getDueSoonByTrainer(Long trainerId, int days) {
-        LocalDate from = LocalDate.now();
-        LocalDate to = from.plusDays(Math.max(days, 0));
-        return trainerIncomeRepository.findByTrainerIdAndNextPaymentDateBetween(trainerId, from, to);
-    }
-
-    @Override
-    public List<TrainerIncome> getAllDueSoon(int days) {
-        LocalDate from = LocalDate.now();
-        LocalDate to = from.plusDays(Math.max(days, 0));
-        return trainerIncomeRepository.findByNextPaymentDateBetween(from, to);
-    }
-
-    @Override
-    public TrainerIncome renewPayment(Long incomeId) {
-        TrainerIncome existing = trainerIncomeRepository.findById(incomeId)
-                .orElseThrow(() -> new IllegalArgumentException("Income record not found: " + incomeId));
-
-        // Shift cycle forward: set lastPaymentDate to today and recompute nextPaymentDate
-        existing.setLastPaymentDate(LocalDate.now());
-        if (existing.getMonth() <= 0) {
-            throw new IllegalStateException("Invalid month on existing record");
-        }
-        existing.setNextPaymentDate(existing.getLastPaymentDate().plusMonths(existing.getMonth()));
-        return trainerIncomeRepository.save(existing);
-    }
-
-    public void disableUser(Long userId) {
-        AppUser user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setStatus("DISABLED");   // update existing status field
-        userRepository.save(user);
-    }
-
-    public void enableUser(Long userId) {
-        AppUser user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setStatus("ACTIVE");     // reset status
-        userRepository.save(user);
-    }
-
-    @Override
     public BaseResponse<UserHealthDetailsResponse> getMyHealthDetails(AppUser appUser) {
         AppUser user = userRepository.findAppUserByUsername(appUser.getUsername());
         UserHealthDetailsResponse dto = new UserHealthDetailsResponse();
@@ -1329,4 +1263,69 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    @Override
+    public TrainerIncome saveIncome(TrainerIncome income) {
+        // Default lastPaymentDate to today if null
+        if (income.getLastPaymentDate() == null) {
+            income.setLastPaymentDate(LocalDate.now());
+        }
+        // Auto-calc nextPaymentDate = lastPaymentDate + month(s)
+        if (income.getMonth() <= 0) {
+            throw new IllegalArgumentException("month must be >= 1");
+        }
+        income.setNextPaymentDate(income.getLastPaymentDate().plusMonths(income.getMonth()));
+        return trainerIncomeRepository.save(income);
+    }
+
+    @Override
+    public List<TrainerIncome> getUpcomingPaymentsByTrainer(Long trainerId) {
+        return trainerIncomeRepository.findByTrainerIdAndNextPaymentDateAfter(trainerId, LocalDate.now());
+    }
+
+    @Override
+    public List<TrainerIncome> getAllUpcomingPayments() {
+        return trainerIncomeRepository.findByNextPaymentDateAfter(LocalDate.now());
+    }
+
+    @Override
+    public List<TrainerIncome> getDueSoonByTrainer(Long trainerId, int days) {
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(Math.max(days, 0));
+        return trainerIncomeRepository.findByTrainerIdAndNextPaymentDateBetween(trainerId, from, to);
+    }
+
+    @Override
+    public List<TrainerIncome> getAllDueSoon(int days) {
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(Math.max(days, 0));
+        return trainerIncomeRepository.findByNextPaymentDateBetween(from, to);
+    }
+
+    @Override
+    public TrainerIncome renewPayment(Long incomeId) {
+        TrainerIncome existing = trainerIncomeRepository.findById(incomeId)
+                .orElseThrow(() -> new IllegalArgumentException("Income record not found: " + incomeId));
+
+        // Shift cycle forward: set lastPaymentDate to today and recompute nextPaymentDate
+        existing.setLastPaymentDate(LocalDate.now());
+        if (existing.getMonth() <= 0) {
+            throw new IllegalStateException("Invalid month on existing record");
+        }
+        existing.setNextPaymentDate(existing.getLastPaymentDate().plusMonths(existing.getMonth()));
+        return trainerIncomeRepository.save(existing);
+    }
+
+    public void disableUser(Long userId) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus("DISABLED");   // update existing status field
+        userRepository.save(user);
+    }
+
+    public void enableUser(Long userId) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus("ACTIVE");     // reset status
+        userRepository.save(user);
+    }
 }
