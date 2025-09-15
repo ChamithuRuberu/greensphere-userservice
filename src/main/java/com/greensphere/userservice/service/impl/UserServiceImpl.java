@@ -31,6 +31,7 @@ import com.greensphere.userservice.enums.ResponseStatus;
 import com.greensphere.userservice.exceptions.MissingParameterException;
 import com.greensphere.userservice.repository.*;
 import com.greensphere.userservice.service.ApiConnector;
+import com.greensphere.userservice.service.ShoutOutService;
 import com.greensphere.userservice.service.AuthUserDetailsService;
 import com.greensphere.userservice.service.UserService;
 import com.greensphere.userservice.utils.*;
@@ -62,6 +63,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ApiConnector apiConnector;
+    private final ShoutOutService shoutOutService;
     private final RoleServiceImpl roleService;
     private final ParameterRepository parameterRepository;
     private final JwtUtil jwtUtil;
@@ -92,6 +94,20 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             log.error("persistUser-> Exception: {}", e.getMessage(), e);
         }
+    }
+
+    private String buildOtpMessage(String template, String otp) {
+        if (template == null) {
+            return otp;
+        }
+        String msg = template;
+        // Common placeholder patterns
+        msg = msg.replace("<otp>", otp);
+        msg = msg.replace("{otp}", otp);
+        msg = msg.replace("${otp}", otp);
+        // If template had angle brackets without key, replace "<>" with otp
+        msg = msg.replace("<>", otp);
+        return msg;
     }
 
     public BaseResponse<HashMap<String, Object>> registerInit(UserRegisterRequestDto registerInitRequest) {
@@ -173,11 +189,12 @@ public class UserServiceImpl implements UserService {
                 throw new MissingParameterException("OTP_MESSAGE parameter is missing from database, Please add missing OTP_MESSAGE parameter");
             }
             String otp = RandomNumberGenerator.createRandomReference(Integer.parseInt(otpLengthParameter.getValue()));
-            String otpMessage = otpMessageParameter.getValue().replace("<otp>", otp);
+            String otpTemplate = otpMessageParameter.getValue();
+            String otpMessage = buildOtpMessage(otpTemplate, otp);
 
             //API CALL NOTIFICATION SERVICE ->
             log.info("registerInit -> sending registration otp to user");
-            SmsResponse smsResponse = apiConnector.sendSms(mobile, otpMessage);
+            SmsResponse smsResponse = shoutOutService.sms(mobile, otpMessage);
             String otpStatus = smsResponse.getCode().equals(ResponseCodeUtil.SUCCESS_CODE) ? SENT.name() : FAILED.name();
             appUser.setOtp(otp);
             appUser.setOtpStatus(otpStatus);
@@ -795,10 +812,10 @@ public class UserServiceImpl implements UserService {
                         log.info("Sending login attempts exceeded message to user {}.", loginUser.getUsername());
                         String value = smsExceeded.getValue();
                         String mobile = loginUser.getMobile();
-                        SmsResponse sms = apiConnector.sendSms(mobile, value);
-                        if (!ResponseCodeUtil.SUCCESS_CODE.equals(sms.getCode())) {
-                            log.error("Failed to send message to user {} at mobile number {}.", loginUser.getUsername(), loginUser.getMobile());
-                        }
+//                        SmsResponse sms = shoutOutService.sms(mobile, value);
+//                        if (!ResponseCodeUtil.SUCCESS_CODE.equals(sms.getCode())) {
+//                            log.error("Failed to send message to user {} at mobile number {}.", loginUser.getUsername(), loginUser.getMobile());
+//                        }
 
                         log.error("loguser -> login attempts exceeded");
                         return BaseResponse.<UserLoginResponse>builder()
