@@ -18,8 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AppUser extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_sequence")
-    @SequenceGenerator(name = "user_sequence", sequenceName = "user_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long govId;
     private Long gymId;

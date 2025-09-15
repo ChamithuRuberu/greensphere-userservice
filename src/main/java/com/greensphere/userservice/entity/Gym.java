@@ -10,8 +10,7 @@ import lombok.Setter;
 public class Gym {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "gym_sequence")
-    @SequenceGenerator(name = "gym_sequence", sequenceName = "gym_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long AdminId;
     private String gymName;

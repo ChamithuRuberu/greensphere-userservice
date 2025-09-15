@@ -15,8 +15,7 @@ import java.util.UUID;
 public class WorkOuts extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "workout_sequence")
-    @SequenceGenerator(name = "workout_sequence", sequenceName = "workout_sequence")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
     // Program Context

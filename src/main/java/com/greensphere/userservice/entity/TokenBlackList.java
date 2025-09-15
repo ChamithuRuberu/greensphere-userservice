@@ -21,8 +21,7 @@ import java.time.LocalDateTime;
 public class TokenBlackList {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "token_black_list_sequence")
-    @SequenceGenerator(name = "token_black_list_sequence", sequenceName = "token_black_list_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(length = 1000)
     private String token;

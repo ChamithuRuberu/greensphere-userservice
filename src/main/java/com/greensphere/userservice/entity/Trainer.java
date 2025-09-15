@@ -10,8 +10,7 @@ import lombok.Setter;
 public class Trainer {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "trainer_sequence")
-    @SequenceGenerator(name = "trainer_sequence", sequenceName = "trainer_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String trainerId;

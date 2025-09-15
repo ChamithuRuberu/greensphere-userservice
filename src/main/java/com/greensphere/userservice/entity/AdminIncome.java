@@ -14,8 +14,7 @@ import java.util.Date;
 public class AdminIncome {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "admin_income_sequence")
-    @SequenceGenerator(name = "admin_income_sequence", sequenceName = "admin_income_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long adminId;
     private Long gymId;

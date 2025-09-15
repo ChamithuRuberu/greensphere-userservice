@@ -14,8 +14,7 @@ import java.util.Date;
 public class TrainerIncome {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "trainer_income_sequence")
-    @SequenceGenerator(name = "trainer_income_sequence", sequenceName = "trainer_income_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long trainerId;
     private String userEmail;

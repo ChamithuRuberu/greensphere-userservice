@@ -10,8 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 public class WorkoutProgressLog extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "workout_progress_sequence")
-    @SequenceGenerator(name = "workout_progress_sequence", sequenceName = "workout_progress_sequence")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
